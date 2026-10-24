@@ -1,4 +1,4 @@
--- Pendamping Kuis Kelas — skema Fase 2 (satu sekolah, banyak guru).
+-- Cikaracak — skema Fase 2 (satu sekolah, banyak guru).
 -- Prinsip: data minimal (nama + nomor absen), tanpa NIK/NISN/alamat/foto di server.
 -- Semua tabel memuat sekolah_id; aturan akses ada di migrasi RLS berikutnya.
 

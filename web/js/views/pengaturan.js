@@ -35,7 +35,7 @@ export function render(el, ctx) {
     </div>
     <div class="card clay">
       <h3>Tentang</h3>
-      <p class="kecil">Pendamping Kuis Kelas ${VERSI_APP} — aplikasi open source (lisensi MIT) untuk asesmen formatif. Saran bersifat usulan; keputusan tetap di tangan guru. Bukan untuk nilai rapor.</p>
+      <p class="kecil">Cikaracak ${VERSI_APP} (Cara Inovatif Kelola Asesmen Rutin, Analisis Cepat, Aksi Konsisten) — aplikasi open source (lisensi MIT) untuk asesmen formatif. Saran bersifat usulan; keputusan tetap di tangan guru. Bukan untuk nilai rapor.</p>
       <p class="kecil muted">Data CP: Keputusan Kepala BSKAP Kemendikdasmen Nomor 046/H/KR/2025, Lampiran II.</p>
       <p class="kecil">Kode sumber, panduan kontribusi, dan laporan masalah: lihat README di repositori GitHub proyek ini.</p>
     </div>
@@ -49,7 +49,7 @@ export function pasang(el, ctx) {
     if (e.target.id === 'filePulih' && e.target.files[0]) {
       try {
         const j = JSON.parse(await e.target.files[0].text());
-        if (j.aplikasi !== 'pendamping-kuis-kelas' || !j.data) throw new Error('Bukan file cadangan aplikasi ini');
+        if (j.aplikasi !== 'cikaracak' || !j.data) throw new Error('Bukan file cadangan aplikasi ini');
         await store.ganti(j.data);
         toast(`Data dipulihkan: ${store.data.rombel.length} kelas, ${store.data.kuis.length} kuis`);
       } catch (err) { toast('Gagal memulihkan: ' + err.message); }
@@ -59,8 +59,8 @@ export function pasang(el, ctx) {
   el.addEventListener('click', e => {
     const b = e.target.closest('[data-aksi]'); if (!b) return;
     if (b.dataset.aksi === 'cadangkan') {
-      const isi = { aplikasi: 'pendamping-kuis-kelas', versiApp: VERSI_APP, dibuat: new Date().toISOString(), data: store.data };
-      unduh(`cadangan-pendamping-kuis-${hariIni()}.json`, JSON.stringify(isi, null, 1), 'application/json');
+      const isi = { aplikasi: 'cikaracak', versiApp: VERSI_APP, dibuat: new Date().toISOString(), data: store.data };
+      unduh(`cadangan-cikaracak-${hariIni()}.json`, JSON.stringify(isi, null, 1), 'application/json');
     }
     if (b.dataset.aksi === 'hapus-semua') konfirmasiDuaKetuk(b, async () => { await store.ganti(dataKosong()); toast('Semua data dihapus'); }, 'Yakin hapus semua?');
     if (b.dataset.aksi === 'muat-contoh') konfirmasiDuaKetuk(b, async () => { await store.ganti(dataContoh()); toast('Data contoh dimuat'); }, 'Ganti data dengan contoh?');

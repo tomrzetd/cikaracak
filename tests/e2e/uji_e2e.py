@@ -145,7 +145,7 @@ def jalan(page, nama):
     with page.expect_download() as dl:
         page.click('[data-aksi=cadangkan]')
     j = json.loads(Path(dl.value.path()).read_text())
-    assert j['aplikasi'] == 'pendamping-kuis-kelas' and len(j['data']['rombel']) == 2
+    assert j['aplikasi'] == 'cikaracak' and len(j['data']['rombel']) == 2
 
     # Lebar halaman tidak boleh melebihi layar (HP)
     lebar = page.evaluate('document.documentElement.scrollWidth')

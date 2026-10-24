@@ -2,7 +2,7 @@
 <resources>
     <color name="latar">#F3EEE9</color>
     <color name="mint">#DCEBE5</color>
-    <style name="Theme.PendampingKuis" parent="Theme.AppCompat.DayNight.NoActionBar">
+    <style name="Theme.Cikaracak" parent="Theme.AppCompat.DayNight.NoActionBar">
         <item name="android:windowBackground">@color/latar</item>
         <item name="android:statusBarColor">@color/mint</item>
         <item name="android:navigationBarColor">@color/latar</item>

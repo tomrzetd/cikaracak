@@ -19,4 +19,4 @@ createServer(async (req, res) => {
     res.writeHead(200, { 'Content-Type': TIPE[extname(f)] || 'application/octet-stream', 'Cache-Control': 'no-cache' });
     res.end(await readFile(f));
   } catch { res.writeHead(404); res.end('Tidak ditemukan'); }
-}).listen(port, () => console.log(`Pendamping Kuis Kelas: http://localhost:${port}`));
+}).listen(port, () => console.log(`Cikaracak: http://localhost:${port}`));

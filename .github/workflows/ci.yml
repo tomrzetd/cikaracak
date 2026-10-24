@@ -76,5 +76,5 @@ jobs:
         working-directory: android
       - uses: actions/upload-artifact@v4
         with:
-          name: pendamping-kuis-debug-apk
+          name: cikaracak-debug-apk
           path: android/app/build/outputs/apk/debug/*.apk

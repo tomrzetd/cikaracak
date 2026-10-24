@@ -1,7 +1,7 @@
 // Penyimpanan IndexedDB di perangkat: data aplikasi dan foto siswa.
 // Foto disimpan terpisah dan TIDAK ikut ekspor/cadangan kecuali guru memintanya.
 
-const NAMA_DB = 'pendamping-kuis';
+const NAMA_DB = 'cikaracak';
 
 function buka() {
   return new Promise((res, rej) => {

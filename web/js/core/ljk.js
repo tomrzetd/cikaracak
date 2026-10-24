@@ -102,7 +102,7 @@ export function renderSVG(L, info = {}) {
   const yKaki = Math.max(...L.soal.map(s => s.y), ...L.kode[0].bulatan.map(b => b.y)) + 12;
   o.push(`<text x="22" y="${yKaki}" font-size="2.8" fill="#333">Contoh benar:</text><circle cx="45" cy="${yKaki - 1}" r="${L.r}" fill="#000"/>`);
   o.push(`<text x="54" y="${yKaki}" font-size="2.8" fill="#333">Contoh salah:</text><circle cx="76" cy="${yKaki - 1}" r="${L.r}" fill="none" stroke="#8a8a8a" stroke-width="0.3"/><path d="M73.8 ${yKaki - 3.2}l4.4 4.4m0 -4.4l-4.4 4.4" stroke="#000" stroke-width="0.6"/>`);
-  o.push(`<text x="105" y="${L.tinggi - 9.5}" font-size="2.4" text-anchor="middle" fill="#666">Pendamping Kuis Kelas · ${L.versi} · kode ${kode}</text>`);
+  o.push(`<text x="105" y="${L.tinggi - 9.5}" font-size="2.4" text-anchor="middle" fill="#666">Cikaracak · ${L.versi} · kode ${kode}</text>`);
   o.push('</svg>');
   return o.join('');
 }

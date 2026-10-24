@@ -1,6 +1,6 @@
 {
-  "name": "Pendamping Kuis Kelas",
-  "short_name": "Pendamping Kuis",
+  "name": "Cikaracak — Laun-laun jadi legok",
+  "short_name": "Cikaracak",
   "description": "Kuis formatif, pindai lembar jawaban, dan saran tindak lanjut untuk guru. Bekerja offline.",
   "lang": "id",
   "start_url": "./index.html",

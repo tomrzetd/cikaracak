@@ -1,7 +1,7 @@
 {
-  "name": "pendamping-kuis-kelas",
+  "name": "cikaracak",
   "version": "0.1.0",
-  "description": "Pendamping Kuis Kelas: aplikasi open source untuk guru SD/SMP/SMA — kuis formatif, scan LJK, dan saran tindak lanjut.",
+  "description": "Cikaracak: aplikasi open source untuk guru SD/SMP/SMA — kuis formatif, scan LJK, dan saran tindak lanjut.",
   "private": true,
   "type": "module",
   "license": "MIT",

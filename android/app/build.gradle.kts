@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "id.pendampingkuis"
+    namespace = "id.cikaracak"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "id.pendampingkuis"
+        applicationId = "id.cikaracak"
         minSdk = 24          // Android 7.0 — mencakup sebagian besar HP guru
         targetSdk = 35
         versionCode = 1

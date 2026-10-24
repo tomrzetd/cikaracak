@@ -1,4 +1,4 @@
-package id.pendampingkuis
+package id.cikaracak
 
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -61,7 +61,7 @@ class Jembatan(private val aktivitas: AppCompatActivity, private val web: WebVie
     fun salin(teks: String): Boolean {
         aktivitas.runOnUiThread {
             val cm = aktivitas.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-            cm.setPrimaryClip(ClipData.newPlainText("Pendamping Kuis", teks))
+            cm.setPrimaryClip(ClipData.newPlainText("Cikaracak", teks))
         }
         return true
     }

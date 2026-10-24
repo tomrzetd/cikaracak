@@ -107,6 +107,6 @@ export function ringkasanWA(info, hasil) {
   [...hasil.konsep].sort((a, b) => (a.p ?? 101) - (b.p ?? 101)).forEach(k => L.push(`• ${k.nama}: ${f(k.p)} (${LABEL_STATUS[k.status]})`));
   if (hasil.dampingi.length) L.push('', `Perlu didampingi: ${hasil.dampingi.map(p => `${p.nama} (${p.p}%)`).join(', ')}`);
   if (hasil.cekSoal.length) L.push('', `Cek ulang soal no. ${hasil.cekSoal.map(q => q.no).join(', ')}`);
-  L.push('', '_Saran dari Pendamping Kuis Kelas; keputusan tetap di guru._');
+  L.push('', '_Saran dari Cikaracak; keputusan tetap di guru._');
   return L.join('\n');
 }

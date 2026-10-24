@@ -1,4 +1,4 @@
-package id.pendampingkuis
+package id.cikaracak
 
 import android.annotation.SuppressLint
 import android.content.ActivityNotFoundException
@@ -21,7 +21,7 @@ import androidx.webkit.WebViewAssetLoader
 import java.io.File
 
 /**
- * Aplikasi Android Pendamping Kuis Kelas.
+ * Aplikasi Android Cikaracak.
  * Membuka aplikasi web dari aset APK (folder web/ disalin saat build) lewat
  * https://appassets.androidplatform.net/assets/web/ sehingga IndexedDB dan modul JavaScript berfungsi,
  * lalu menambahkan hal yang tidak didukung WebView bawaan: memilih/memotret file, menyimpan file, mencetak.

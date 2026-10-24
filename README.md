@@ -1,8 +1,28 @@
-# Pendamping Kuis Kelas
+# Cikaracak
 
-Aplikasi open source untuk guru SD, SMP, dan SMA: buat kuis formatif singkat, cetak lembar jawaban, **pindai dengan kamera HP**, lalu dapatkan saran konsep mana yang perlu diulang dan siswa mana yang perlu didampingi. Bekerja **offline**, data tetap di perangkat guru.
+*Laun-laun jadi legok.*
+
+**C**ara **I**novatif **K**elola **A**sesmen **R**utin, **A**nalisis **C**epat, **A**ksi **K**onsisten.
+
+Namanya diambil dari paribasa Sunda *"cikaracak ninggang batu, laun-laun jadi legok"*: tetesan air yang terus jatuh di atas batu, lama-lama membuat cekungan. Begitu pula pemahaman siswa. Bukan dari satu ujian besar, tetapi dari kuis kecil yang rutin, dianalisis cepat, dan ditindaklanjuti secara konsisten. Lahir di kaki Gunung Ciremai, Kuningan, Jawa Barat.
+
+Cikaracak adalah aplikasi open source untuk guru SD, SMP, dan SMA: buat kuis formatif singkat, cetak lembar jawaban, **pindai dengan kamera HP**, lalu dapatkan saran konsep mana yang perlu diulang dan siswa mana yang perlu didampingi. Bekerja **offline**, dan data tetap di perangkat guru.
 
 > Saran bersifat usulan; keputusan tetap di tangan guru. Aplikasi ini untuk asesmen formatif, **bukan** untuk nilai rapor dan **bukan** untuk menilai kinerja guru.
+
+## Siklus CIKARACAK di kelas
+
+| | Langkah | Di aplikasi |
+| --- | --- | --- |
+| **C** | **C**apaian | Mulai dari CP resmi 2025 |
+| **I** | **I**dentifikasi tujuan | Pilih butir CP menjadi konsep & TP |
+| **K** | **K**uis | Buat soal dan kunci jawaban |
+| **A** | **A**rsir | Siswa mengarsir LJK |
+| **R** | **R**ekap | Pindai dengan kamera HP |
+| **A** | **A**nalisis | Persen benar per konsep dan per siswa |
+| **C** | **C**ari penyebab | Ajak bicara siswa, cek soal yang janggal |
+| **A** | **A**mbil tindakan | Ulang konsep, dampingi kelompok kecil |
+| **K** | **K**uis lagi | Kembali ke K, dan siklus berulang seperti tetesan *cikaracak* |
 
 ## Fitur
 
@@ -22,8 +42,8 @@ Aplikasi open source untuk guru SD, SMP, dan SMA: buat kuis formatif singkat, ce
 **Mencoba di komputer** (butuh [Node.js](https://nodejs.org) 20 atau lebih baru, tanpa `npm install`):
 
 ```bash
-git clone https://github.com/<organisasi>/pendamping-kuis.git
-cd pendamping-kuis
+git clone https://github.com/<akun-atau-organisasi>/cikaracak.git
+cd cikaracak
 node tools/serve.js          # buka http://localhost:8080
 ```
 
@@ -68,4 +88,4 @@ Kode: [MIT](LICENSE). Data Capaian Pembelajaran bersumber dari Keputusan Kepala 
 
 ---
 
-*English summary:* Open-source, offline-first PWA and Android app that helps Indonesian K-12 teachers run short formative quizzes, scan printed answer sheets with a phone camera (pure-JS OMR), and get rule-based, explainable re-teaching suggestions. Includes the 2025 national learning outcomes (CP) as structured data and a Supabase schema with row-level security for multi-teacher schools. Contributions welcome; issues and docs are in Bahasa Indonesia.
+*English summary:* Cikaracak (Sundanese proverb: "a steady drip hollows the stone") is an open-source, offline-first PWA and Android app that helps Indonesian K-12 teachers run short formative quizzes, scan printed answer sheets with a phone camera (pure-JS OMR), and get rule-based, explainable re-teaching suggestions. Includes the 2025 national learning outcomes (CP) as structured data and a Supabase schema with row-level security for multi-teacher schools. Contributions welcome; issues and docs are in Bahasa Indonesia.

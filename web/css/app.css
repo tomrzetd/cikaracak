@@ -1,4 +1,4 @@
-/* Pendamping Kuis Kelas — tema "clay" (claymorphism): pastel lembut, sudut membulat, bayangan luar + dalam.
+/* Cikaracak — tema "clay" (claymorphism): pastel lembut, sudut membulat, bayangan luar + dalam.
    Semua warna lewat token di :root; mode gelap mengikuti sistem. */
 :root {
   --bg: #F3EEE9; --surface: #FBF8F5; --ink: #2B2522; --muted: #75695F; --line: #E6DDD5;
