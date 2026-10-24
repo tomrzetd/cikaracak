@@ -1,0 +1,37 @@
+name: Laporan uji LJK
+description: Hasil mencoba pindai lembar jawaban di kelas (paling dibutuhkan proyek)
+labels: [uji-lapangan, pemindai]
+body:
+  - type: input
+    id: hp
+    attributes:
+      label: Merek/tipe HP dan versi Android
+    validations: { required: true }
+  - type: dropdown
+    id: cahaya
+    attributes:
+      label: Kondisi cahaya
+      options: [Terang (dekat jendela/lampu), Sedang, Redup, Ada bayangan tangan/HP]
+    validations: { required: true }
+  - type: dropdown
+    id: jenis
+    attributes:
+      label: Jenis lembar
+      options: [Per siswa (absen tercetak), Lembar kosong (siswa mengarsir absen)]
+  - type: input
+    id: angka
+    attributes:
+      label: Jumlah lembar, jumlah soal, berapa bulatan salah baca tanpa tanda kuning, berapa yang ditandai kuning
+      placeholder: "mis. 32 lembar × 20 soal; 1 salah tanpa tanda; 14 ditandai"
+    validations: { required: true }
+  - type: dropdown
+    id: alat
+    attributes:
+      label: Alat tulis siswa
+      multiple: true
+      options: [Pensil 2B, Pensil biasa, Pulpen hitam, Pulpen biru, Spidol]
+  - type: textarea
+    id: catatan
+    attributes:
+      label: Catatan
+      description: "Bila ada lembar yang gagal dibaca, lampirkan foto LJK yang Anda isi sendiri (bukan milik siswa) agar bisa dijadikan bahan uji."

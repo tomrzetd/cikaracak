@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Pendamping Kuis</string>
+    <string name="pilih_file">Pilih file atau ambil foto</string>
+    <string name="file_tersimpan">File tersimpan</string>
+    <string name="file_gagal">File gagal disimpan: %1$s</string>
+</resources>

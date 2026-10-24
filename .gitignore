@@ -1,0 +1,21 @@
+# Node / Python
+node_modules/
+__pycache__/
+*.pyc
+e2e-shots/
+
+# Android
+android/.gradle/
+android/.idea/
+android/local.properties
+android/build/
+android/app/build/
+android/app/src/main/assets/web/
+*.apk
+*.aab
+*.jks
+*.keystore
+
+# Sistem
+.DS_Store
+Thumbs.db

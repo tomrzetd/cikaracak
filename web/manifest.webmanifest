@@ -1,0 +1,17 @@
+{
+  "name": "Pendamping Kuis Kelas",
+  "short_name": "Pendamping Kuis",
+  "description": "Kuis formatif, pindai lembar jawaban, dan saran tindak lanjut untuk guru. Bekerja offline.",
+  "lang": "id",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#F3EEE9",
+  "theme_color": "#DCEBE5",
+  "icons": [
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

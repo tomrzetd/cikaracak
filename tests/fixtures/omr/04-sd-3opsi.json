@@ -1,0 +1,98 @@
+{
+ "soal": [
+  {
+   "jenis": "pg",
+   "opsi": 3
+  },
+  {
+   "jenis": "pg",
+   "opsi": 3
+  },
+  {
+   "jenis": "pg",
+   "opsi": 3
+  },
+  {
+   "jenis": "pg",
+   "opsi": 3
+  },
+  {
+   "jenis": "pg",
+   "opsi": 3
+  },
+  {
+   "jenis": "pg",
+   "opsi": 3
+  },
+  {
+   "jenis": "pg",
+   "opsi": 3
+  },
+  {
+   "jenis": "pg",
+   "opsi": 3
+  },
+  {
+   "jenis": "pg",
+   "opsi": 3
+  },
+  {
+   "jenis": "pg",
+   "opsi": 3
+  },
+  {
+   "jenis": "pg",
+   "opsi": 3
+  },
+  {
+   "jenis": "pg",
+   "opsi": 3
+  }
+ ],
+ "kode": "418",
+ "absen": 4,
+ "harap": [
+  {
+   "jawaban": "C"
+  },
+  {
+   "jawaban": "C"
+  },
+  {
+   "jawaban": "A"
+  },
+  {
+   "jawaban": "A"
+  },
+  {
+   "jawaban": "A"
+  },
+  {
+   "jawaban": "A"
+  },
+  {
+   "jawaban": "A"
+  },
+  {
+   "jawaban": "A"
+  },
+  {
+   "jawaban": null,
+   "status": "ganda"
+  },
+  {
+   "jawaban": "C"
+  },
+  {
+   "jawaban": "C"
+  },
+  {
+   "jawaban": "B"
+  }
+ ],
+ "kesulitan": 0.8,
+ "ukuran": [
+  1075,
+  1402
+ ]
+}

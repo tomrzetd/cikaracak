@@ -1,0 +1,26 @@
+name: Usulan fitur atau aturan saran
+description: Ide untuk membuat aplikasi lebih berguna di kelas
+labels: [usulan]
+body:
+  - type: textarea
+    id: masalah
+    attributes:
+      label: Masalah di kelas yang ingin diselesaikan
+    validations: { required: true }
+  - type: textarea
+    id: usulan
+    attributes:
+      label: Usulan
+      description: "Untuk aturan saran: tulis pemicunya (angka) dan kalimat saran yang akan dilihat guru."
+    validations: { required: true }
+  - type: textarea
+    id: dasar
+    attributes:
+      label: Dasar pedagogis atau rujukan (bila ada)
+  - type: checkboxes
+    id: prinsip
+    attributes:
+      label: Prinsip proyek
+      options:
+        - label: Usulan ini tidak mengirim data siswa ke luar perangkat/sekolah dan tidak dipakai menilai guru.
+          required: true

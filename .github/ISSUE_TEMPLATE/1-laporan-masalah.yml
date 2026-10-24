@@ -1,0 +1,29 @@
+name: Laporan masalah
+description: Ada yang tidak berjalan sebagaimana mestinya
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: "Jangan sertakan nama, foto, atau jawaban siswa sungguhan. Tangkapan layar dengan data contoh atau nama disamarkan sudah cukup."
+  - type: textarea
+    id: langkah
+    attributes:
+      label: Langkah yang dilakukan
+      placeholder: "1. Buka menu Kuis\n2. Ketuk Pindai LJK\n3. ..."
+    validations: { required: true }
+  - type: textarea
+    id: hasil
+    attributes:
+      label: Yang terjadi dan yang seharusnya terjadi
+    validations: { required: true }
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Dipakai di
+      options: [Aplikasi Android, Chrome di HP, Browser di laptop/PC, Lainnya]
+    validations: { required: true }
+  - type: input
+    id: perangkat
+    attributes:
+      label: Merek/tipe HP atau browser, dan versi Android
+      placeholder: "mis. Redmi 10, Android 12, Chrome 130"

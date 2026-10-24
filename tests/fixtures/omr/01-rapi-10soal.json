@@ -1,0 +1,83 @@
+{
+ "soal": [
+  {
+   "jenis": "pg",
+   "opsi": 4
+  },
+  {
+   "jenis": "pg",
+   "opsi": 4
+  },
+  {
+   "jenis": "pg",
+   "opsi": 4
+  },
+  {
+   "jenis": "pg",
+   "opsi": 4
+  },
+  {
+   "jenis": "pg",
+   "opsi": 4
+  },
+  {
+   "jenis": "pg",
+   "opsi": 4
+  },
+  {
+   "jenis": "pg",
+   "opsi": 4
+  },
+  {
+   "jenis": "pg",
+   "opsi": 4
+  },
+  {
+   "jenis": "pg",
+   "opsi": 4
+  },
+  {
+   "jenis": "pg",
+   "opsi": 4
+  }
+ ],
+ "kode": "463",
+ "absen": 7,
+ "harap": [
+  {
+   "jawaban": "D"
+  },
+  {
+   "jawaban": "B"
+  },
+  {
+   "jawaban": "D"
+  },
+  {
+   "jawaban": "B"
+  },
+  {
+   "jawaban": "D"
+  },
+  {
+   "jawaban": "B"
+  },
+  {
+   "jawaban": "A"
+  },
+  {
+   "jawaban": "D"
+  },
+  {
+   "jawaban": "B"
+  },
+  {
+   "jawaban": "A"
+  }
+ ],
+ "kesulitan": 0.3,
+ "ukuran": [
+  1102,
+  1438
+ ]
+}

@@ -1,0 +1,294 @@
+{
+ "soal": [
+  {
+   "jenis": "pg",
+   "opsi": 5
+  },
+  {
+   "jenis": "pg",
+   "opsi": 5
+  },
+  {
+   "jenis": "pg",
+   "opsi": 5
+  },
+  {
+   "jenis": "pg",
+   "opsi": 5
+  },
+  {
+   "jenis": "pg",
+   "opsi": 5
+  },
+  {
+   "jenis": "pg",
+   "opsi": 5
+  },
+  {
+   "jenis": "pg",
+   "opsi": 5
+  },
+  {
+   "jenis": "pg",
+   "opsi": 5
+  },
+  {
+   "jenis": "pg",
+   "opsi": 5
+  },
+  {
+   "jenis": "pg",
+   "opsi": 5
+  },
+  {
+   "jenis": "pg",
+   "opsi": 5
+  },
+  {
+   "jenis": "pg",
+   "opsi": 5
+  },
+  {
+   "jenis": "pg",
+   "opsi": 5
+  },
+  {
+   "jenis": "pg",
+   "opsi": 5
+  },
+  {
+   "jenis": "pg",
+   "opsi": 5
+  },
+  {
+   "jenis": "pg",
+   "opsi": 5
+  },
+  {
+   "jenis": "pg",
+   "opsi": 5
+  },
+  {
+   "jenis": "pg",
+   "opsi": 5
+  },
+  {
+   "jenis": "pg",
+   "opsi": 5
+  },
+  {
+   "jenis": "pg",
+   "opsi": 5
+  },
+  {
+   "jenis": "pg",
+   "opsi": 5
+  },
+  {
+   "jenis": "pg",
+   "opsi": 5
+  },
+  {
+   "jenis": "pg",
+   "opsi": 5
+  },
+  {
+   "jenis": "pg",
+   "opsi": 5
+  },
+  {
+   "jenis": "pg",
+   "opsi": 5
+  },
+  {
+   "jenis": "pg",
+   "opsi": 5
+  },
+  {
+   "jenis": "pg",
+   "opsi": 5
+  },
+  {
+   "jenis": "pg",
+   "opsi": 5
+  },
+  {
+   "jenis": "pg",
+   "opsi": 5
+  },
+  {
+   "jenis": "pg",
+   "opsi": 5
+  },
+  {
+   "jenis": "pg",
+   "opsi": 5
+  },
+  {
+   "jenis": "pg",
+   "opsi": 5
+  },
+  {
+   "jenis": "pg",
+   "opsi": 5
+  },
+  {
+   "jenis": "pg",
+   "opsi": 5
+  },
+  {
+   "jenis": "pg",
+   "opsi": 5
+  },
+  {
+   "jenis": "pg",
+   "opsi": 5
+  },
+  {
+   "jenis": "pg",
+   "opsi": 5
+  },
+  {
+   "jenis": "pg",
+   "opsi": 5
+  },
+  {
+   "jenis": "pg",
+   "opsi": 5
+  },
+  {
+   "jenis": "pg",
+   "opsi": 5
+  }
+ ],
+ "kode": "092",
+ "absen": 12,
+ "harap": [
+  {
+   "jawaban": null,
+   "status": "kosong"
+  },
+  {
+   "jawaban": "C"
+  },
+  {
+   "jawaban": "B"
+  },
+  {
+   "jawaban": "A"
+  },
+  {
+   "jawaban": "D"
+  },
+  {
+   "jawaban": "D"
+  },
+  {
+   "jawaban": "E"
+  },
+  {
+   "jawaban": "C"
+  },
+  {
+   "jawaban": "D"
+  },
+  {
+   "jawaban": "A"
+  },
+  {
+   "jawaban": "C"
+  },
+  {
+   "jawaban": "B"
+  },
+  {
+   "jawaban": "A"
+  },
+  {
+   "jawaban": "D"
+  },
+  {
+   "jawaban": "A"
+  },
+  {
+   "jawaban": "B"
+  },
+  {
+   "jawaban": "E"
+  },
+  {
+   "jawaban": "D"
+  },
+  {
+   "jawaban": "B"
+  },
+  {
+   "jawaban": "D"
+  },
+  {
+   "jawaban": "C"
+  },
+  {
+   "jawaban": "A"
+  },
+  {
+   "jawaban": "D"
+  },
+  {
+   "jawaban": "C"
+  },
+  {
+   "jawaban": "E"
+  },
+  {
+   "jawaban": "B"
+  },
+  {
+   "jawaban": "B"
+  },
+  {
+   "jawaban": "B"
+  },
+  {
+   "jawaban": "E"
+  },
+  {
+   "jawaban": "D"
+  },
+  {
+   "jawaban": "C"
+  },
+  {
+   "jawaban": "B"
+  },
+  {
+   "jawaban": "D"
+  },
+  {
+   "jawaban": "E"
+  },
+  {
+   "jawaban": "A"
+  },
+  {
+   "jawaban": "A"
+  },
+  {
+   "jawaban": "A"
+  },
+  {
+   "jawaban": "C"
+  },
+  {
+   "jawaban": "C"
+  },
+  {
+   "jawaban": "B"
+  }
+ ],
+ "kesulitan": 1.6,
+ "ukuran": [
+  1036,
+  1351
+ ]
+}

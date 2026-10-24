@@ -1,0 +1,179 @@
+{
+ "soal": [
+  {
+   "jenis": "pg",
+   "opsi": 4
+  },
+  {
+   "jenis": "pg",
+   "opsi": 4
+  },
+  {
+   "jenis": "pg",
+   "opsi": 4
+  },
+  {
+   "jenis": "pg",
+   "opsi": 4
+  },
+  {
+   "jenis": "pg",
+   "opsi": 4
+  },
+  {
+   "jenis": "pg",
+   "opsi": 4
+  },
+  {
+   "jenis": "pg",
+   "opsi": 4
+  },
+  {
+   "jenis": "pg",
+   "opsi": 4
+  },
+  {
+   "jenis": "pg",
+   "opsi": 4
+  },
+  {
+   "jenis": "pg",
+   "opsi": 4
+  },
+  {
+   "jenis": "pg",
+   "opsi": 4
+  },
+  {
+   "jenis": "pg",
+   "opsi": 4
+  },
+  {
+   "jenis": "pg",
+   "opsi": 4
+  },
+  {
+   "jenis": "pg",
+   "opsi": 4
+  },
+  {
+   "jenis": "pg",
+   "opsi": 4
+  },
+  {
+   "jenis": "bs"
+  },
+  {
+   "jenis": "bs"
+  },
+  {
+   "jenis": "bs"
+  },
+  {
+   "jenis": "bs"
+  },
+  {
+   "jenis": "bs"
+  },
+  {
+   "jenis": "bs"
+  },
+  {
+   "jenis": "bs"
+  },
+  {
+   "jenis": "bs"
+  },
+  {
+   "jenis": "bs"
+  },
+  {
+   "jenis": "bs"
+  }
+ ],
+ "kode": "584",
+ "absen": 31,
+ "harap": [
+  {
+   "jawaban": "B"
+  },
+  {
+   "jawaban": "B"
+  },
+  {
+   "jawaban": "B"
+  },
+  {
+   "jawaban": "C"
+  },
+  {
+   "jawaban": "D"
+  },
+  {
+   "jawaban": "C"
+  },
+  {
+   "jawaban": "A"
+  },
+  {
+   "jawaban": "D"
+  },
+  {
+   "jawaban": "D"
+  },
+  {
+   "jawaban": "D"
+  },
+  {
+   "jawaban": "C"
+  },
+  {
+   "jawaban": "B"
+  },
+  {
+   "jawaban": "A"
+  },
+  {
+   "jawaban": "C"
+  },
+  {
+   "jawaban": "A"
+  },
+  {
+   "jawaban": "S"
+  },
+  {
+   "jawaban": "S"
+  },
+  {
+   "jawaban": "S"
+  },
+  {
+   "jawaban": "B"
+  },
+  {
+   "jawaban": null,
+   "status": "kosong"
+  },
+  {
+   "jawaban": "S"
+  },
+  {
+   "jawaban": "B"
+  },
+  {
+   "jawaban": "B"
+  },
+  {
+   "jawaban": "S"
+  },
+  {
+   "jawaban": "B"
+  }
+ ],
+ "kesulitan": 1.3,
+ "ukuran": [
+  1067,
+  1392
+ ]
+}
