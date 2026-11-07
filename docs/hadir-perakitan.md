@@ -30,6 +30,32 @@ RC522 dan layar berbagi SCK dan MOSI. Masing-masing punya pin CS sendiri.
 
 Pin IRQ pada RC522 tidak dipakai. GPIO8 (LED biru) dan GPIO9 (tombol BOOT) sudah ada di papan.
 
+### Pilihan lain: ESP32-S3-DevKitC-1U (antena eksternal)
+
+Untuk gerbang yang jauh dari router, pakai **ESP32-S3-DevKitC-1U** (huruf **U** = soket antena U.FL)
+dengan antena 2,4 GHz. Firmware-nya `cikaracak-hadir-esp32s3.bin` / `cikaracak-uji-kartu-esp32s3.bin`.
+Semua kabel ada di **header kiri** papan, jadi tidak menyilang:
+
+| ESP32-S3 | RC522 | Layar ST7789 | Buzzer |
+|---|---|---|---|
+| 3V3 | 3.3V | VCC | VCC |
+| GND | GND | GND | GND |
+| GPIO12 | SCK | SCL | |
+| GPIO13 | MISO | | |
+| GPIO11 | MOSI | SDA | |
+| GPIO10 | SDA (SS) | | |
+| GPIO9 | RST | | |
+| GPIO14 | | CS | |
+| GPIO8 | | DC | |
+| GPIO18 | | RST | |
+| GPIO17 | | BLK | |
+| GPIO16 | | | I/O |
+
+- **Pasang antena sebelum menyalakan papan.** Memancar tanpa antena bisa merusak bagian radio.
+- DevKitC punya dua port USB. Untuk flash dan Serial Monitor pakai port berlabel **UART** (atau **COM**).
+- Lampu RGB bawaan papan berkedip putih saat kartu terbaca. Tombol BOOT (GPIO0) dipakai untuk pengaturan.
+- Pada S3, WiFi memakai daya pancar penuh. Daya rendah hanya dipakai pada C3 Super Mini.
+
 ## Flash firmware uji kartu tanpa instal apa pun
 
 1. Buka **https://espressif.github.io/esptool-js/** di Chrome atau Edge (laptop).
@@ -65,8 +91,8 @@ di server dalam bentuk asli: server hanya menyimpan sidik (hash) UID.
 
 ## Firmware alat gerbang (`cikaracak-hadir-esp32c3.bin`)
 
-Flash dengan cara yang sama (alamat `0x0`). Berkas terbaru juga tersedia di tab **Actions** GitHub,
-artefak `firmware-esp32c3`, bersama `ciki.gif` (pratinjau animasi).
+Flash dengan cara yang sama (alamat `0x0`; pilih berkas `-esp32c3` atau `-esp32s3` sesuai papan). Berkas terbaru juga ada di tab **Actions** GitHub,
+artefak `firmware-esp32`, bersama `ciki.gif` (pratinjau animasi).
 
 ### Pengaturan pertama
 

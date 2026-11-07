@@ -10,8 +10,8 @@
 namespace ck {
 
 static constexpr uint16_t rgb(uint8_t r, uint8_t g, uint8_t b) { return (uint16_t)(((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3)); }
-static const uint16_t LATAR = rgb(10, 18, 38);
-static const uint16_t AIR = rgb(90, 220, 255);      // warna mata: air jernih
+static const uint16_t LATAR = rgb(0, 0, 0);          // hitam pekat: kontras paling kuat di panel IPS
+static const uint16_t AIR = rgb(30, 190, 255);      // warna mata: air jernih
 static const uint16_t AIR_TUA = rgb(30, 120, 170);
 static const uint16_t PUTIH = rgb(240, 248, 255);
 static const uint16_t PIPI = rgb(255, 120, 160);
@@ -286,8 +286,19 @@ void Layar::tulisTengah(const char *t, int16_t y, const GFXfont *f, uint8_t skal
   c_.setFont(f); c_.setTextSize(skala); c_.setTextWrap(false);
   c_.getTextBounds(t, 0, 0, &x1, &y1, &w, &h);
   if (lebarMaks && (int16_t)w > lebarMaks && f == &FreeSansBold12pt7b) {   // terlalu lebar: turunkan ukuran
-    tulisTengah(t, y, &FreeSansBold9pt7b, skala, warna, 0);
+    tulisTengah(t, y, &FreeSansBold9pt7b, skala, warna, lebarMaks);
     return;
+  }
+  char pendek[64];
+  if (lebarMaks && (int16_t)w > lebarMaks) {   // masih terlalu lebar: potong dan beri ".."
+    size_t n = strlen(t);
+    if (n >= sizeof pendek) n = sizeof pendek - 1;
+    memcpy(pendek, t, n); pendek[n] = 0;
+    while (n > 3 && (int16_t)w > lebarMaks) {
+      pendek[--n - 2] = '.'; pendek[n - 1] = '.'; pendek[n] = 0;
+      c_.getTextBounds(pendek, 0, 0, &x1, &y1, &w, &h);
+    }
+    t = pendek;
   }
   c_.setTextColor(warna);
   c_.setCursor((W - (int16_t)w) / 2 - x1, y);
@@ -296,7 +307,7 @@ void Layar::tulisTengah(const char *t, int16_t y, const GFXfont *f, uint8_t skal
 
 void Layar::gambarStatus(const DataLayar &d) {
   // ikon sinyal kecil di pojok kanan atas + antrean offline
-  int16_t x = W - 22, y = 14;
+  int16_t x = W - 34, y = 22;   // panel 1,47" bersudut bulat: jauhi pojok
   for (int i = 0; i < 3; i++) {
     int16_t tinggi = 4 + i * 4;
     c_.fillRect(x + i * 6, y - tinggi, 4, tinggi, d.online ? HIJAU : rgb(70, 80, 100));
@@ -305,21 +316,21 @@ void Layar::gambarStatus(const DataLayar &d) {
   c_.setFont(&FreeSans9pt7b); c_.setTextSize(1);
   if (d.antrean) {
     char b[12]; snprintf(b, sizeof b, "%u", d.antrean);
-    c_.setTextColor(KUNING); c_.setCursor(W - 40 - lebarTeks(b, &FreeSans9pt7b, 1), 15); c_.print(b);
+    c_.setTextColor(KUNING); c_.setCursor(W - 44 - lebarTeks(b, &FreeSans9pt7b, 1), 22); c_.print(b);
   }
-  c_.setTextColor(ABU); c_.setCursor(8, 15); c_.print(d.jam);
+  c_.setTextColor(ABU); c_.setCursor(18, 22); c_.print(d.jam);
 }
 
 void Layar::gambarSiagaBawah(const DataLayar &d, uint32_t ms) {
   if (!d.siapServer) {
-    tulisTengah("Mode demo: tempel kartu", 150, &FreeSansBold9pt7b, 1, KUNING);
-    tulisTengah("Pengaturan: tahan BOOT 3 detik", 167, &FreeSans9pt7b, 1, ABU);
+    tulisTengah("Mode demo: tempel kartu", 143, &FreeSansBold9pt7b, 1, KUNING);
+    tulisTengah("Atur: tahan BOOT 3 detik", 161, &FreeSans9pt7b, 1, ABU);
     return;
   }
   // "Tempelkan kartu" berdenyut lembut
   float k = 0.6f + 0.4f * sinf(ms / 500.0f);
   uint16_t warna = rgb((uint8_t)(90 + 150 * k), (uint8_t)(200 + 48 * k), 255);
-  tulisTengah("Tempelkan kartu", 163, &FreeSansBold12pt7b, 1, warna);
+  tulisTengah("Tempelkan kartu", 158, &FreeSansBold12pt7b, 1, warna);
 }
 
 bool Layar::ambilPesan(const DataLayar &d, uint8_t ke, char *out, size_t n) {
@@ -342,7 +353,7 @@ void Layar::gambarScreensaver(uint32_t ms, const DataLayar &d) {
     case 0: {   // jam besar + tanggal
       tulisTengah(d.jam, 98, &FreeSansBold24pt7b, 2, AIR);
       tulisTengah(d.tanggal, 136, &FreeSansBold12pt7b, 1, PUTIH);
-      if (d.sekolah[0]) tulisTengah(d.sekolah, 162, &FreeSans9pt7b, 1, ABU);
+      if (d.sekolah[0]) tulisTengah(d.sekolah, 158, &FreeSans9pt7b, 1, ABU);
       ganti = t > 9000;
       break;
     }
@@ -371,7 +382,7 @@ void Layar::gambarScreensaver(uint32_t ms, const DataLayar &d) {
       suasana_ = Suasana::Tidur;
       gambarWajah(W / 2.0f, 70, 0.9f, ms);
       suasana_ = simpan;
-      tulisTengah("Tempelkan kartu untuk membangunkan Ciki", 166, &FreeSans9pt7b, 1, ABU);
+      tulisTengah("Tempel kartu, Ciki bangun", 160, &FreeSans9pt7b, 1, ABU);
       ganti = t > 7000;
       break;
     }
@@ -411,8 +422,8 @@ void Layar::gambar(uint32_t ms, const DataLayar &d) {
   if (adaTeks) {
     uint16_t warnaJudul = suasana_ == Suasana::Sedih ? MERAH
                         : suasana_ == Suasana::Bingung || suasana_ == Suasana::Terlambat ? KUNING : PUTIH;
-    tulisTengah(judul_, 132, &FreeSansBold12pt7b, 1, warnaJudul, W - 12);
-    tulisTengah(sub_, 160, &FreeSans9pt7b, 1, ABU);
+    tulisTengah(judul_, 131, &FreeSansBold12pt7b, 1, warnaJudul, W - 24);
+    tulisTengah(sub_, 157, &FreeSans9pt7b, 1, ABU, W - 24);
   } else {
     gambarSiagaBawah(d, ms);
   }

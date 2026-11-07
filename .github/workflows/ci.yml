@@ -100,10 +100,11 @@ jobs:
       - name: Gabungkan menjadi satu berkas siap flash (alamat 0x0)
         run: |
           P=~/.platformio/packages
-          for e in uji-kartu hadir; do
+          for e in uji-kartu hadir uji-kartu-s3 hadir-s3; do
             B=firmware/.pio/build/$e
-            python $P/tool-esptoolpy/esptool.py --chip esp32c3 merge_bin -o cikaracak-$e-esp32c3.bin \
-              --flash_mode dio --flash_size 4MB 0x0 $B/bootloader.bin 0x8000 $B/partitions.bin \
+            case $e in *-s3) CHIP=esp32s3; NAMA=${e%-s3}-esp32s3;; *) CHIP=esp32c3; NAMA=$e-esp32c3;; esac
+            python $P/tool-esptoolpy/esptool.py --chip $CHIP merge_bin -o cikaracak-$NAMA.bin \
+              --flash_mode dio --flash_size keep 0x0 $B/bootloader.bin 0x8000 $B/partitions.bin \
               0xe000 $P/framework-arduinoespressif32/tools/partitions/boot_app0.bin 0x10000 $B/firmware.bin
           done
       - name: Pratinjau animasi wajah Ciki
@@ -112,7 +113,7 @@ jobs:
           bash tools/firmware/pratinjau/buat.sh "firmware/.pio/libdeps/hadir/Adafruit GFX Library" ciki.gif
       - uses: actions/upload-artifact@v4
         with:
-          name: firmware-esp32c3
+          name: firmware-esp32
           path: |
-            cikaracak-*-esp32c3.bin
+            cikaracak-*-esp32*.bin
             ciki.gif

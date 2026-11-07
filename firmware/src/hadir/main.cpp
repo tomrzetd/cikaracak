@@ -32,7 +32,11 @@
 #define ZONA_WAKTU "WIB-7"          // WITA-8 / WIT-9 untuk sekolah di zona lain
 #endif
 #ifndef WIFI_DAYA_RENDAH
+#if CONFIG_IDF_TARGET_ESP32C3
 #define WIFI_DAYA_RENDAH 1          // banyak papan C3 Super Mini lebih stabil dengan daya pancar rendah
+#else
+#define WIFI_DAYA_RENDAH 0          // ESP32-S3 DevKit (apalagi dengan antena eksternal): daya penuh
+#endif
 #endif
 #ifndef TFT_SPI_HZ
 #define TFT_SPI_HZ 40000000         // turunkan ke 27000000 bila gambar berbintik
@@ -275,7 +279,7 @@ static uint32_t polaSampai = 0;
 
 static void buzzer(bool nyala) {
   digitalWrite(PIN_BUZZER, nyala == (bool)BUZZER_AKTIF_LOW ? LOW : HIGH);
-  digitalWrite(PIN_LED, nyala ? LOW : HIGH);
+  ledPasang(nyala);
 }
 static void bunyi(ck::Bunyi b) {
   pola = b == ck::Bunyi::Senang ? POLA_SENANG : b == ck::Bunyi::Pendek ? POLA_PENDEK : b == ck::Bunyi::Ragu ? POLA_RAGU : POLA_GALAT;
@@ -444,12 +448,12 @@ static void terimaJawaban() {
 }
 
 void setup() {
-  pinMode(PIN_BUZZER, OUTPUT); pinMode(PIN_LED, OUTPUT); buzzer(false);
+  pinMode(PIN_BUZZER, OUTPUT); if (PIN_LED >= 0) pinMode(PIN_LED, OUTPUT); buzzer(false);
   pinMode(PIN_TFT_BLK, OUTPUT); digitalWrite(PIN_TFT_BLK, HIGH);
   pinMode(PIN_TOMBOL, INPUT_PULLUP);
   Serial.begin(115200);
   delay(200);
-  Serial.printf("\n# Cikaracak Hadir %s\n", VERSI);
+  Serial.printf("\n# Cikaracak Hadir %s (%s)\n", VERSI, PAPAN);
 
   // Kanvas 110 KB dipesan paling awal, sebelum WiFi dan TLS memecah memori.
   kanvas = new GFXcanvas16(TFT_TINGGI, TFT_LEBAR);

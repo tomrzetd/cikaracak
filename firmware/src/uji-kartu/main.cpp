@@ -14,6 +14,8 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_ST7789.h>
 #include "pin.h"
+#define STR_(x) #x
+#define STR(x) STR_(x)
 
 static Adafruit_ST7789 tft(&SPI, PIN_TFT_CS, PIN_TFT_DC, PIN_TFT_RST);
 static MFRC522 rfid(PIN_RFID_SS, PIN_RFID_RST);
@@ -69,8 +71,8 @@ static const char *namaVersi(byte v) {
 void setup() {
   pinMode(PIN_BUZZER, OUTPUT);
   digitalWrite(PIN_BUZZER, BUZZER_AKTIF_LOW ? HIGH : LOW);   // diam dulu
-  pinMode(PIN_LED, OUTPUT);
-  digitalWrite(PIN_LED, HIGH);
+  if (PIN_LED >= 0) pinMode(PIN_LED, OUTPUT);
+  ledPasang(false);
   pinMode(PIN_TFT_BLK, OUTPUT);
   digitalWrite(PIN_TFT_BLK, HIGH);
   Serial.begin(115200);
@@ -101,9 +103,9 @@ void setup() {
     const char *baris[] = {
       "Cek kabel RC522:",
       "3.3V -> 3V3 (BUKAN 5V)   GND -> GND",
-      "SCK  -> GPIO4    MISO -> GPIO5",
-      "MOSI -> GPIO6    SDA  -> GPIO0",
-      "RST  -> GPIO1",
+      "SCK  -> GPIO" STR(PIN_SCK) "   MISO -> GPIO" STR(PIN_MISO),
+      "MOSI -> GPIO" STR(PIN_MOSI) "   SDA  -> GPIO" STR(PIN_RFID_SS),
+      "RST  -> GPIO" STR(PIN_RFID_RST) "   (" PAPAN ")",
       "Lalu tekan tombol RST di papan ESP32."};
     for (uint8_t i = 0; i < 6; i++) { tft.setCursor(14, 50 + i * 18); tft.print(baris[i]); }
     Serial.println("# RC522 tidak terdeteksi. Periksa kabel.");
@@ -164,7 +166,7 @@ void loop() {
   tengah(String("Dibaca: ") + jumlahBaca + "   Kartu berbeda: " + jumlahUnik, 150, 1, ABU);
 
   if (cocok) bunyi(70); else { bunyi(70); delay(90); bunyi(70); }
-  digitalWrite(PIN_LED, LOW); delay(60); digitalWrite(PIN_LED, HIGH);
+  ledPasang(true); delay(60); ledPasang(false);
 
   rfid.PICC_HaltA();
   rfid.PCD_StopCrypto1();
