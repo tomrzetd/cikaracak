@@ -24,3 +24,11 @@ Thumbs.db
 firmware/.pio/
 *.bin
 ciki.gif
+
+# Data asli sekolah (nama siswa/guru) TIDAK boleh masuk repositori publik
+*.xlsx
+*.xls
+*.csv
+!tests/**/*.csv
+impor-*.sql
+data-asli/
