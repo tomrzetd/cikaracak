@@ -126,8 +126,8 @@ void loop() {
   // Kembali ke layar siaga 6 detik setelah kartu terbaca
   if (tampilHasil && millis() - terakhirAktif > 6000) { layarSiaga(); tampilHasil = false; }
 
-  // Petunjuk bila lama tidak ada kartu terbaca
-  if (!tampilHasil && !petunjukTampil && millis() - terakhirAktif > 30000) {
+  // Petunjuk bila sejak menyala belum ada satu kartu pun yang terbaca
+  if (jumlahBaca == 0 && !petunjukTampil && millis() - terakhirAktif > 30000) {
     tft.fillRect(0, 128, tft.width(), 44, LATAR);
     tengah("Kartu tidak terbaca sama sekali?", 132, 1, KUNING);
     tengah("Mungkin bukan 13,56 MHz. Coba kartu/stiker MIFARE.", 148, 1, KUNING);
