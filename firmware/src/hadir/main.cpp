@@ -292,15 +292,16 @@ static void langkahBunyi() {
 // ---------------- layar ----------------
 static void dorongLayar() { tft.drawRGBBitmap(0, 0, kanvas->getBuffer(), kanvas->width(), kanvas->height()); }
 
-static void layarInfo(const char *judul, const char *b1, const char *b2, const char *b3) {
+static void layarInfo(const char *judul, const char *b1, const char *b2, const char *b3, const char *b4 = "") {
   kanvas->fillScreen(0x0884);
   kanvas->setFont(nullptr); kanvas->setTextWrap(false);
-  kanvas->setTextSize(2); kanvas->setTextColor(0xFE60); kanvas->setCursor(10, 14); kanvas->print(judul);
-  kanvas->setTextSize(2); kanvas->setTextColor(0xFFFF);
-  kanvas->setCursor(10, 56); kanvas->print(b1);
-  kanvas->setCursor(10, 90); kanvas->print(b2);
+  kanvas->setTextSize(2); kanvas->setTextColor(0xFE60); kanvas->setCursor(10, 12); kanvas->print(judul);
+  kanvas->setTextColor(0xFFFF);
+  kanvas->setCursor(10, 46); kanvas->print(b1);
+  kanvas->setCursor(10, 76); kanvas->print(b2);
+  kanvas->setCursor(10, 106); kanvas->print(b3);
   kanvas->setTextSize(1); kanvas->setTextColor(0x9CF3);
-  kanvas->setCursor(10, 130); kanvas->print(b3);
+  kanvas->setCursor(10, 146); kanvas->print(b4);
   dorongLayar();
 }
 
@@ -331,10 +332,18 @@ static void bukaPortal() {
   char ap[24];
   snprintf(ap, sizeof ap, "Cikaracak-%04X", (unsigned)(ESP.getEfuseMac() & 0xFFFF));
   layarInfo("MODE PENGATURAN", (String("WiFi: ") + ap).c_str(), "Sandi: " SANDI_PORTAL,
-            "Sambungkan HP ke WiFi itu, lalu buka 192.168.4.1. Batas waktu 5 menit.");
+            "Buka 192.168.4.1", "Pilih WiFi 2.4 GHz (bukan 5G). Batas 5 menit.");
   WiFiManager wm;
+  // Hanya menu WiFi & Keluar: menu "Update" (ganti firmware lewat udara) sengaja disembunyikan.
+  std::vector<const char *> menu = {"wifi", "exit"};
+  wm.setMenu(menu);
+  wm.setRemoveDuplicateAPs(true);
+  wm.setMinimumSignalQuality(15);
+#if WIFI_DAYA_RENDAH
+  wm.setAPCallback([](WiFiManager *) { WiFi.setTxPower(WIFI_POWER_8_5dBm); });
+#endif
   char kunciHex[65] = "";
-  WiFiManagerParameter pServer("server", "Alamat server (https://xxxx.supabase.co)", cfg.server, sizeof cfg.server - 1);
+  WiFiManagerParameter pServer("server", "Alamat server, boleh kosong untuk mode demo (https://xxxx.supabase.co)", cfg.server, sizeof cfg.server - 1);
   WiFiManagerParameter pAnon("anon", "Kunci anon / publishable", cfg.anon, sizeof cfg.anon - 1);
   WiFiManagerParameter pAlat("alat", "ID alat (8 karakter)", cfg.alat, 8);
   WiFiManagerParameter pKunci("kunci", "Kunci alat (64 karakter; kosongkan bila tidak diganti)", kunciHex, 64);
@@ -359,8 +368,12 @@ static void bukaPortal() {
     pref.end();
     layarInfo("TERSIMPAN", "Alat dinyalakan", "ulang...", "");
     delay(1500);
+    ESP.restart();
   }
-  ESP.restart();
+  // Ditutup / habis waktu tanpa menyimpan: lanjut seperti biasa (mode demo bila server belum diatur).
+  WiFi.mode(WIFI_STA);
+  WiFi.begin();
+  if (hJaringan) vTaskResume(hJaringan);
 }
 
 // ---------------- setup & loop ----------------
@@ -379,8 +392,20 @@ static void bacaKartu() {
   terakhirKartu = millis();
   layar->tidur(false);
 
-  if (!cfgLengkap()) {
-    layar->tampil(ck::Suasana::Bingung, "Alat belum diatur", "Tahan BOOT 3 detik"); bunyi(ck::Bunyi::Ragu); tampilSampai = millis() + 4000; return; }
+  if (!cfgLengkap()) {   // MODE DEMO: server belum diatur, tampilkan reaksi Ciki bergiliran
+    static const char *DEMO[] = {"hadir", "terlambat", "sudah", "tidak_dikenal", "terdaftar", "simpan", "pulang"};
+    static uint8_t ke = 0;
+    const char *h = DEMO[ke++ % (sizeof DEMO / sizeof DEMO[0])];
+    struct tm tm{}; bool adaJam = getLocalTime(&tm, 0);
+    ck::Teks t;
+    ck::susunTeks(h, "Kawan", adaJam ? data.jam : "07:00", 12, adaJam ? tm.tm_hour : 7, t);
+    char sub[48]; snprintf(sub, sizeof sub, "[DEMO] %s", t.sub);
+    layar->tampil(t.suasana, t.judul, sub);
+    bunyi(t.bunyi);
+    Serial.printf("[demo] kartu %s -> %s\n", uid, h);
+    tampilSampai = millis() + 4000;
+    return;
+  }
 
   ck::Antre a{};
   strcpy(a.uid, uid);
@@ -452,7 +477,7 @@ void setup() {
   byte v = rfid.PCD_ReadRegister(MFRC522::VersionReg);
   Serial.printf("# RC522 0x%02X, antrean %u, heap %u\n", v, (unsigned)jumlahAntrean, (unsigned)ESP.getFreeHeap());
   if (v == 0x00 || v == 0xFF) {
-    layarInfo("RC522 TIDAK TERDETEKSI", "Periksa kabel RC522", "(firmware uji-kartu)", "Alat tetap jalan, tetapi kartu tidak bisa dibaca.");
+    layarInfo("RC522 TIDAK TERDETEKSI", "Periksa kabel RC522", "(firmware uji-kartu)", "", "Alat tetap jalan, tetapi kartu tidak bisa dibaca.");
     bunyi(ck::Bunyi::Galat);
     delay(3000);
   }
@@ -462,15 +487,19 @@ void setup() {
 #if WIFI_DAYA_RENDAH
   WiFi.setTxPower(WIFI_POWER_8_5dBm);
 #endif
-  if (!cfgLengkap()) bukaPortal();
-  layarInfo("CIKARACAK HADIR", "Menyambung WiFi...", "", "Tahan BOOT 3 detik untuk pengaturan.");
   {
     WiFiManager wm;
-    wm.setEnableConfigPortal(false);
-    wm.setConnectTimeout(15);
-    wm.autoConnect();
+    bool adaWifi = wm.getWiFiIsSaved();
+    if (!adaWifi) bukaPortal();   // pertama kali: atur WiFi (ditutup tanpa simpan = lanjut mode demo)
+    else {
+      layarInfo("CIKARACAK HADIR", "Menyambung WiFi...", "", "", "Tahan BOOT 3 detik untuk pengaturan.");
+      wm.setEnableConfigPortal(false);
+      wm.setConnectTimeout(15);
+      wm.autoConnect();
+    }
   }
   WiFi.setAutoReconnect(true);
+  WiFi.setSleep(false);   // tanpa hemat daya WiFi: jawaban server lebih cepat
 #if WIFI_DAYA_RENDAH
   WiFi.setTxPower(WIFI_POWER_8_5dBm);
 #endif

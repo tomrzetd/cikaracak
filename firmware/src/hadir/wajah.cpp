@@ -312,8 +312,8 @@ void Layar::gambarStatus(const DataLayar &d) {
 
 void Layar::gambarSiagaBawah(const DataLayar &d, uint32_t ms) {
   if (!d.siapServer) {
-    tulisTengah("Alat belum diatur", 150, &FreeSansBold9pt7b, 1, KUNING);
-    tulisTengah("Tahan BOOT 3 detik", 167, &FreeSans9pt7b, 1, ABU);
+    tulisTengah("Mode demo: tempel kartu", 150, &FreeSansBold9pt7b, 1, KUNING);
+    tulisTengah("Pengaturan: tahan BOOT 3 detik", 167, &FreeSans9pt7b, 1, ABU);
     return;
   }
   // "Tempelkan kartu" berdenyut lembut
