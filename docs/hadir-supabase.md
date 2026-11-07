@@ -44,20 +44,40 @@ Hasil lain untuk layar alat: `terdaftar`, `kartu_terpakai`, `tidak_dikenal`, `no
 | Guru pengajar | lihat presensi kelas yang diajarnya |
 | Tanpa login (alat) | hanya `catat_tap` dan `lapor_alat` |
 
-## Menyiapkan demo (SMPN 2 Jalaksana, data siswa fiktif)
+## Menyiapkan demo di Supabase (SMPN 2 Jalaksana, siswa fiktif)
 
-1. Buat proyek di supabase.com (gratis). Di **SQL Editor**, jalankan keempat file di `supabase/migrations/` berurutan.
-2. **Authentication → Users → Add user**: buat akun admin (email + kata sandi).
-3. Di SQL Editor, hubungkan akun itu ke sekolah (ganti email):
-   ```sql
-   with s as (insert into sekolah (nama, jenjang) values ('SMPN 2 Jalaksana', 'SMP') returning id)
-   insert into pengguna (id, sekolah_id, nama, peran)
-   select u.id, s.id, 'Operator', 'admin' from auth.users u, s where u.email = 'operator@contoh.sch.id';
-   ```
-4. Setelah halaman Presensi di aplikasi siap, rombel, siswa, jadwal, dan alat diatur dari sana.
-   Kunci alat hanya tampil **sekali** saat alat dibuat. Bila hilang, pakai "ganti kunci".
-5. Kartu bisa didaftarkan dengan mode daftar di alat (pilih siswa, tempel kartu dalam 60 detik) atau
-   dengan mengetik UID yang tampil di firmware uji kartu.
+1. Buat proyek gratis di supabase.com. Pilih region **Singapore** (paling dekat).
+2. **SQL Editor**: jalankan keempat file `supabase/migrations/*.sql` berurutan (salin-tempel isinya, Run).
+3. **Authentication → Users → Add user → Create new user**: email operator + kata sandi, centang **Auto Confirm User**.
+4. **SQL Editor**: buka `supabase/demo.sql`, ganti email di baris `v_email`, Run.
+   Hasilnya: sekolah, jadwal Senin–Jumat, kelas VII-A/VIII-A/IX-A dengan 10 siswa fiktif masing-masing,
+   dan satu alat "Gerbang utama". Tabel di bawah editor menampilkan **ID alat** dan **kunci alat**.
+5. **Project Settings → API**: salin **Project URL** dan kunci **anon / publishable**.
+6. Buka aplikasi → **Presensi** → isi alamat server dan kunci anon → masuk dengan akun operator.
+7. Coba tanpa alat: tab **Kartu siswa** → *Ketik UID* (mis. `A1B2C3D4`), lalu tab **Simulator alat** →
+   pilih alat, tempel kunci alat, UID yang sama → *Tempelkan kartu*. Daftar hadir di tab **Hari ini** langsung terisi.
+8. Dengan alat sungguhan: tahan BOOT 3 detik, isi Project URL, kunci anon, ID alat, dan kunci alat.
+
+Guru lain: buat akunnya di Authentication → Users, lalu di aplikasi tab **Kelas & guru → Tambah guru**.
+Atur wali kelas di tabel kelas pada tab yang sama.
+
+## Mencoba tanpa akun Supabase ("Supabase mini" di komputer)
+
+Untuk pengembang dan uji otomatis: PostgreSQL + PostgREST asli + gerbang login tiruan, berisi data demo yang sama.
+
+```
+# PostgREST: unduh postgrest-v12.2.3-linux-static-x64.tar.xz dari github.com/PostgREST/postgrest/releases
+POSTGREST=./postgrest bash tools/supabase/server-demo.sh          # mencetak alamat, kunci anon, akun, alat demo
+node tools/serve.js 8080                                          # aplikasi di http://localhost:8080
+```
+
+Akun demo: `operator@contoh.sch.id` / `demo12345` (admin) dan `wali@contoh.sch.id` / `demo12345` (wali VIII-A).
+Uji browser otomatis: `bash tools/supabase/server-demo.sh python3 tests/e2e/uji_presensi.py` (juga berjalan di CI).
+
+## Aplikasi Android
+
+Halaman Presensi berjalan sama di aplikasi Android (WebView). Syaratnya alamat server **https://** (Supabase
+sudah https); alamat http biasa diblokir Android. Halaman lain tetap bekerja offline tanpa server.
 
 ## Pindah ke PHP + MySQL (idwebhost)
 
