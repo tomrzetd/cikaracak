@@ -62,3 +62,50 @@ no,uid,jenis,sak,ukuran_uid
 
 Firmware hanya membaca UID. Isi kartu, nama, dan data pribadi siswa tidak dibaca. UID juga tidak disimpan
 di server dalam bentuk asli: server hanya menyimpan sidik (hash) UID.
+
+## Firmware alat gerbang (`cikaracak-hadir-esp32c3.bin`)
+
+Flash dengan cara yang sama (alamat `0x0`). Berkas terbaru juga tersedia di tab **Actions** GitHub,
+artefak `firmware-esp32c3`, bersama `ciki.gif` (pratinjau animasi).
+
+### Pengaturan pertama
+
+1. Saat pertama menyala, layar menampilkan **MODE PENGATURAN** dengan nama WiFi `Cikaracak-XXXX`, sandi `cikaracak`.
+2. Sambungkan HP ke WiFi itu. Halaman pengaturan biasanya terbuka sendiri; bila tidak, buka `192.168.4.1`.
+3. Pilih **Configure WiFi**, pilih WiFi sekolah, isi sandinya, lalu isi:
+   - **Alamat server**: `https://xxxx.supabase.co` (Supabase → Project Settings → API → Project URL)
+   - **Kunci anon / publishable**: dari halaman yang sama
+   - **ID alat** dan **Kunci alat**: dari halaman Alat di aplikasi (kunci hanya tampil sekali saat alat dibuat)
+   - **Pesan layar**: tulisan besar untuk screensaver, pisahkan dengan `|`
+4. Simpan. Alat menyala ulang dan Ciki muncul.
+
+Untuk mengubah pengaturan kapan saja: **tahan tombol BOOT 3 detik**. Kunci alat yang dikosongkan tidak diganti.
+
+### Yang tampil di layar
+
+| Keadaan | Ciki | Tulisan |
+|---|---|---|
+| Menunggu | melirik ke sana-sini, berkedip | Tempelkan kartu |
+| Kartu terbaca | mata membesar | Sebentar... |
+| Hadir | mata "^ ^", pipi merah, tetes air berjatuhan | Selamat pagi, Adit! / Hadir 06:50 |
+| Terlambat | cemas, keringat | Halo, Adit / Tercatat 07:25, telat 25 menit |
+| Sudah tap | mengedip | Sudah tercatat |
+| Pulang | tersenyum puas | Hati-hati di jalan, Adit! |
+| Kartu belum terdaftar | bingung, tanda tanya | Hubungi operator sekolah |
+| Kartu baru didaftarkan | mata bintang | Kartu terdaftar! |
+| Internet putus | tersenyum, awan | Tersimpan, dikirim saat internet kembali |
+
+Setelah 45 detik tanpa kartu, layar berganti ke **screensaver**: jam besar dan tanggal, pesan berjalan dengan
+huruf besar, jumlah siswa yang sudah tap hari ini, dan Ciki tidur. Tempel kartu kapan saja untuk membangunkannya.
+
+Pojok kanan atas: batang hijau = tersambung ke server, abu-abu dicoret = offline. Angka kuning = jumlah tap
+yang tersimpan dan belum terkirim (maksimal 2000, dikirim otomatis ketika internet kembali, berlaku 7 hari).
+
+### Bila ada masalah
+
+| Gejala | Coba |
+|---|---|
+| WiFi sering putus | Dekatkan alat ke router. Firmware sudah memakai daya pancar rendah yang lebih stabil untuk C3 Super Mini. |
+| "Kunci alat salah" | Kunci di alat berbeda dengan server. Buat kunci baru di aplikasi, lalu tahan BOOT dan isi ulang. |
+| Gambar berbintik | Kabel SPI terlalu panjang. Kompilasi ulang dengan `-D TFT_SPI_HZ=27000000`. |
+| Jam "--:--" terus | Internet sekolah memblokir NTP. Minta operator jaringan membuka UDP port 123. |

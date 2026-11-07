@@ -19,3 +19,8 @@ android/app/src/main/assets/web/
 # Sistem
 .DS_Store
 Thumbs.db
+
+# Firmware
+firmware/.pio/
+*.bin
+ciki.gif
