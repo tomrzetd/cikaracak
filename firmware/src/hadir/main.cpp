@@ -27,7 +27,7 @@
 #include "wajah.h"
 #include "akar_ca.h"
 
-#define VERSI "0.2.0"
+#define VERSI "0.2.1"
 #ifndef ZONA_WAKTU
 #define ZONA_WAKTU "WIB-7"          // WITA-8 / WIT-9 untuk sekolah di zona lain
 #endif
@@ -39,7 +39,7 @@
 #endif
 #endif
 #ifndef TFT_SPI_HZ
-#define TFT_SPI_HZ 40000000         // turunkan ke 27000000 bila gambar berbintik
+#define TFT_SPI_HZ 27000000         // 26,7 MHz: cukup untuk 30 bingkai/detik, derau ke pita WiFi 2,4 GHz lebih kecil
 #endif
 #define SANDI_PORTAL "cikaracak"
 #define MAKS_ANTREAN 2000
@@ -330,6 +330,8 @@ static void perbaruiData(struct tm &t, bool adaJam) {
 }
 
 // ---------------- mode pengaturan (portal WiFi) ----------------
+static bool wifiDipakai = false;
+static uint32_t cobaSambungBerikut = 0, jedaSambung = 10000;
 static void bukaPortal() {
   if (hJaringan) vTaskSuspend(hJaringan);   // jangan kirim apa pun selama WiFi diatur ulang
   buzzer(false);
@@ -375,8 +377,9 @@ static void bukaPortal() {
     ESP.restart();
   }
   // Ditutup / habis waktu tanpa menyimpan: lanjut seperti biasa (mode demo bila server belum diatur).
-  WiFi.mode(WIFI_STA);
-  WiFi.begin();
+  wifiDipakai = wm.getWiFiIsSaved();
+  if (wifiDipakai) { WiFi.mode(WIFI_STA); WiFi.begin(); }
+  else WiFi.mode(WIFI_OFF);   // belum ada WiFi tersimpan: radio dimatikan, tidak memancar sama sekali
   if (hJaringan) vTaskResume(hJaringan);
 }
 
@@ -493,8 +496,8 @@ void setup() {
 #endif
   {
     WiFiManager wm;
-    bool adaWifi = wm.getWiFiIsSaved();
-    if (!adaWifi) bukaPortal();   // pertama kali: atur WiFi (ditutup tanpa simpan = lanjut mode demo)
+    wifiDipakai = wm.getWiFiIsSaved();
+    if (!wifiDipakai) bukaPortal();   // pertama kali: atur WiFi (ditutup tanpa simpan = lanjut mode demo)
     else {
       layarInfo("CIKARACAK HADIR", "Menyambung WiFi...", "", "", "Tahan BOOT 3 detik untuk pengaturan.");
       wm.setEnableConfigPortal(false);
@@ -502,11 +505,15 @@ void setup() {
       wm.autoConnect();
     }
   }
-  WiFi.setAutoReconnect(true);
-  WiFi.setSleep(false);   // tanpa hemat daya WiFi: jawaban server lebih cepat
+  if (wifiDipakai) {
+    // Hemat daya modem: radio hanya bangun saat perlu, sehingga tidak mengganggu WiFi HP di dekatnya.
+    // Sambung ulang diatur sendiri dengan jeda bertambah (bukan memindai terus-menerus).
+    WiFi.setSleep(true);
+    WiFi.setAutoReconnect(false);
 #if WIFI_DAYA_RENDAH
-  WiFi.setTxPower(WIFI_POWER_8_5dBm);
+    WiFi.setTxPower(WIFI_POWER_8_5dBm);
 #endif
+  }
   configTzTime(ZONA_WAKTU, "id.pool.ntp.org", "pool.ntp.org", "time.google.com");
 
   xTaskCreate(tugasJaringan, "jaringan", 12288, nullptr, 1, &hJaringan);
@@ -534,14 +541,27 @@ void loop() {
     if (v == 0x00 || v == 0xFF) { rfid.PCD_Init(); rfid.PCD_SetAntennaGain(MFRC522::RxGain_max); }
   }
 
-  bacaKartu();
+  // WiFi putus: coba sambung ulang 10 detik, 20, 40, … paling lama tiap 2 menit
+  if (wifiDipakai) {
+    if (WiFi.status() == WL_CONNECTED) jedaSambung = 10000;
+    else if (kini > cobaSambungBerikut) {
+      WiFi.reconnect();
+      cobaSambungBerikut = kini + jedaSambung;
+      jedaSambung = jedaSambung < 120000 ? jedaSambung * 2 : 120000;
+    }
+  }
+
+  static uint32_t pindaiKartu = 0;
+  if (kini - pindaiKartu >= 100) { pindaiKartu = kini; bacaKartu(); }   // 10x per detik sudah terasa seketika
   terimaJawaban();
   langkahBunyi();
 
   if (tampilSampai && kini > tampilSampai) { tampilSampai = 0; layar->siaga(); siagaSejak = kini; }
   if (!tampilSampai && !layar->sedangTidur() && kini - siagaSejak > 45000) layar->tidur(true);
 
-  if (kini - bingkai >= 33) {   // ~30 bingkai per detik
+  // Bingkai secukupnya: 30/detik saat bereaksi, 20 saat siaga, 4 saat screensaver diam (jam/jumlah).
+  // Lalu lintas SPI ke layar berkurang, begitu pula derau listriknya.
+  if (kini - bingkai >= layar->jedaBingkai()) {
     bingkai = kini;
     struct tm tm{};
     bool adaJam = jamSiap() && getLocalTime(&tm, 0);

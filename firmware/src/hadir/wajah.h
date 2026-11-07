@@ -36,6 +36,10 @@ class Layar {
   void siaga();
   void tidur(bool ya);
   bool sedangTidur() const { return tidur_; }
+  uint16_t jedaBingkai() const {
+    if (tidur_) return halaman_ == 1 ? 33 : halaman_ == 3 ? 66 : 250;   // 1 = tulisan berjalan, 3 = Ciki tidur
+    return suasana_ == Suasana::Siaga ? 50 : 33;
+  }
   void gambar(uint32_t ms, const DataLayar &d);   // gambar satu bingkai ke kanvas
 
  private:

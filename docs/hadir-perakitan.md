@@ -132,6 +132,33 @@ yang tersimpan dan belum terkirim (maksimal 2000, dikirim otomatis ketika intern
 | Gejala | Coba |
 |---|---|
 | WiFi sering putus | Dekatkan alat ke router. Firmware sudah memakai daya pancar rendah yang lebih stabil untuk C3 Super Mini. |
+| WiFi HP di dekat alat terganggu / putus | Lihat bagian "Mencegah gangguan WiFi" di bawah. |
 | "Kunci alat salah" | Kunci di alat berbeda dengan server. Buat kunci baru di aplikasi, lalu tahan BOOT dan isi ulang. |
 | Gambar berbintik | Kabel SPI terlalu panjang. Kompilasi ulang dengan `-D TFT_SPI_HZ=27000000`. |
 | Jam "--:--" terus | Internet sekolah memblokir NTP. Minta operator jaringan membuka UDP port 123. |
+
+
+## Mencegah gangguan WiFi di sekitar alat
+
+Rakitan dengan kabel jumper panjang bisa memancarkan derau listrik ke pita 2,4 GHz (pita WiFi), sehingga
+HP yang diletakkan dekat alat sinyalnya melemah atau putus. Firmware 0.2.1 sudah menguranginya:
+
+- Jam SPI layar diturunkan dari 40 ke 26,7 MHz, dan layar hanya digambar seperlunya
+  (30/detik saat bereaksi, 20 saat siaga, 4 saat screensaver diam).
+- Pembaca kartu dipindai 10x per detik, bukan terus-menerus.
+- WiFi memakai mode hemat daya modem, dan sambung ulang memakai jeda bertambah (10 detik … 2 menit),
+  bukan memindai semua kanal terus-menerus.
+- Tanpa WiFi tersimpan (mode demo), radio WiFi dimatikan sama sekali.
+
+Di sisi rakitan, yang paling berpengaruh:
+
+1. **Kabel sependek mungkin**, terutama SCK dan MOSI (kabel jam data). Kabel panjang = antena.
+2. **Kabel GND ikut menyertai** kabel SCK/MOSI (dipilin atau dirapatkan berdampingan).
+3. **Kapasitor penyangga** dekat pin daya: 10 µF + 100 nF antara 3V3–GND di modul layar dan di RC522.
+4. **Catu daya bersih**: pakai charger/power bank yang baik; kabel USB murah sering menjadi sumber derau.
+5. Untuk alat permanen, **pindah ke PCB atau papan berlubang** dengan kabel pendek, atau
+   **ESP32-S3-DevKitC-1U** dengan antena eksternal yang diletakkan menjauhi papan.
+
+Cara memastikan sumbernya: dekatkan HP ke alat, lalu cabut kabel layar (alat tetap menyala).
+Bila sinyal HP kembali normal, sumbernya jalur layar (perbaiki poin 1–3). Bila tidak, sumbernya radio
+WiFi atau catu daya.

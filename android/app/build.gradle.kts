@@ -11,12 +11,28 @@ android {
         applicationId = "id.cikaracak"
         minSdk = 24          // Android 7.0 — mencakup sebagian besar HP guru
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.2.0"
+    }
+
+    // Kunci rilis dibaca dari variabel lingkungan (CI: GitHub Secrets). Kunci TIDAK pernah disimpan di repositori.
+    // Tanpa kunci, build rilis memakai kunci debug: hanya untuk memeriksa bahwa build rilis berhasil, jangan dibagikan.
+    val berkasKunci = System.getenv("CIKARACAK_KEYSTORE")?.let { file(it) }?.takeIf { it.exists() }
+    signingConfigs {
+        if (berkasKunci != null) {
+            create("rilis") {
+                storeFile = berkasKunci
+                storeType = "pkcs12"
+                storePassword = System.getenv("CIKARACAK_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("CIKARACAK_KEY_ALIAS") ?: "cikaracak"
+                keyPassword = System.getenv("CIKARACAK_KEY_PASSWORD") ?: System.getenv("CIKARACAK_KEYSTORE_PASSWORD")
+            }
+        }
     }
 
     buildTypes {
         release {
+            signingConfig = if (berkasKunci != null) signingConfigs.getByName("rilis") else signingConfigs.getByName("debug")
             isMinifyEnabled = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }

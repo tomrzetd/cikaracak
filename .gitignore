@@ -32,3 +32,10 @@ ciki.gif
 !tests/**/*.csv
 impor-*.sql
 data-asli/
+
+# Kunci tanda tangan Android: JANGAN di-commit
+*.p12
+*.jks
+*.keystore
+keystore.base64.txt
+KUNCI-RILIS-*.txt

@@ -118,6 +118,35 @@ jobs:
         with:
           name: cikaracak-debug-apk
           path: android/app/build/outputs/apk/debug/*.apk
+      # Rilis bertanda tangan: hanya bila secret ANDROID_KEYSTORE_BASE64 sudah diisi (lihat docs/android-rilis.md).
+      # Tanpa secret, build rilis tetap dicoba dengan kunci debug untuk memastikan minify/ProGuard tidak rusak.
+      - name: Siapkan kunci rilis
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/rilis.p12"
+            echo "CIKARACAK_KEYSTORE=$RUNNER_TEMP/rilis.p12" >> "$GITHUB_ENV"
+            echo "ADA_KUNCI=1" >> "$GITHUB_ENV"
+          fi
+      - run: ./gradlew assembleRelease --no-daemon
+        working-directory: android
+        env:
+          CIKARACAK_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          CIKARACAK_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      - name: Periksa tanda tangan
+        if: env.ADA_KUNCI == '1'
+        run: |
+          APK=$(ls android/app/build/outputs/apk/release/*.apk | head -1)
+          "$ANDROID_HOME"/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)/apksigner verify --print-certs "$APK" | grep -i "SHA-256"
+          mv "$APK" cikaracak-0.2.0-rilis.apk
+      - uses: actions/upload-artifact@v4
+        if: env.ADA_KUNCI == '1'
+        with:
+          name: cikaracak-release-apk
+          path: cikaracak-0.2.0-rilis.apk
+      - run: rm -f "$RUNNER_TEMP/rilis.p12"
+        if: always()
 
   firmware:
     name: Firmware alat presensi
