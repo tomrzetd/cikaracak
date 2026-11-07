@@ -29,3 +29,4 @@ done
 # migrasi harus bisa dijalankan dua kali untuk data CP (idempoten)
 psql -q -v ON_ERROR_STOP=1 -f "$ROOT/supabase/migrations/20261024000003_ref_cp_2025.sql"
 psql -q -v ON_ERROR_STOP=1 -f "$ROOT/tools/supabase/uji_rls.sql"
+psql -q -v ON_ERROR_STOP=1 -f "$ROOT/tools/supabase/uji_presensi.sql"

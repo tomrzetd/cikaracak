@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- INTERNET hanya dibutuhkan WebView untuk memuat halaman lokal lewat https://appassets.androidplatform.net.
-         Aplikasi tidak menghubungi server mana pun: Content-Security-Policy di index.html memblokir koneksi keluar.
+    <!-- INTERNET: WebView memuat halaman lokal lewat https://appassets.androidplatform.net, dan halaman Presensi
+         menghubungi server sekolah (Supabase, HTTPS) yang diatur guru sendiri. Halaman lain tetap offline.
          Kamera dipanggil lewat aplikasi kamera bawaan (intent), jadi tidak perlu izin CAMERA. -->
     <uses-permission android:name="android.permission.INTERNET" />
 

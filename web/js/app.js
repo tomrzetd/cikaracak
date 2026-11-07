@@ -8,10 +8,11 @@ import * as kelas from './views/kelas.js';
 import * as kuis from './views/kuis.js';
 import * as saran from './views/saran.js';
 import * as riwayat from './views/riwayat.js';
+import * as presensi from './views/presensi.js';
 import * as pengaturan from './views/pengaturan.js';
 
-const VIEWS = { beranda, kelas, kuis, saran, riwayat, pengaturan };
-const JUDUL = { beranda: 'Beranda', kelas: 'Kelas & Siswa', kuis: 'Kuis', saran: 'Saran', riwayat: 'Riwayat & Uji', pengaturan: 'Pengaturan' };
+const VIEWS = { beranda, kelas, kuis, saran, riwayat, presensi, pengaturan };
+const JUDUL = { beranda: 'Beranda', kelas: 'Kelas & Siswa', kuis: 'Kuis', saran: 'Saran', riwayat: 'Riwayat & Uji', presensi: 'Presensi', pengaturan: 'Pengaturan' };
 
 const store = buatStore(penyimpananIDB);
 let aktif = 'beranda';
@@ -70,6 +71,7 @@ function go(v) {
   $$('.nav').forEach(b => (b.dataset.v === v ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current')));
   Object.keys(VIEWS).forEach(k => { $('#v-' + k).hidden = k !== v; });
   $('#judulView').textContent = JUDUL[v];
+  $('.konteks').hidden = v === 'presensi';   // kelas & kuis di perangkat tidak berlaku untuk presensi server
   if (location.hash.slice(1) !== v) history.replaceState(null, '', '#' + v);
   render();
   window.scrollTo(0, 0);

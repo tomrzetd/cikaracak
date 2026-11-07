@@ -62,6 +62,46 @@ jobs:
           name: tangkapan-layar-e2e
           path: e2e-shots/*.png
 
+  presensi:
+    name: Presensi di browser (server sungguhan)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: localhost
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install playwright
+      - run: python -m playwright install --with-deps chromium
+      - name: Pasang PostgREST
+        run: |
+          curl -sSL https://github.com/PostgREST/postgrest/releases/download/v12.2.3/postgrest-v12.2.3-linux-static-x64.tar.xz | tar xJ -C "$RUNNER_TEMP"
+          "$RUNNER_TEMP/postgrest" --version
+      - run: bash tools/supabase/server-demo.sh python tests/e2e/uji_presensi.py
+        env:
+          POSTGREST: ${{ runner.temp }}/postgrest
+          E2E_SHOT: e2e-presensi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tangkapan-layar-presensi
+          path: e2e-presensi/*.png
+
   android:
     name: Build APK Android
     runs-on: ubuntu-latest
@@ -78,3 +118,42 @@ jobs:
         with:
           name: cikaracak-debug-apk
           path: android/app/build/outputs/apk/debug/*.apk
+
+  firmware:
+    name: Firmware alat presensi
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Uji logika firmware (tanda HMAC sama dengan server)
+        run: |
+          g++ -std=c++17 -Wall -Wextra -Werror -I firmware/lib/logika tests/firmware/uji_logika.cpp firmware/lib/logika/*.cpp -o uji_logika
+          ./uji_logika
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/cache@v4
+        with:
+          path: ~/.platformio
+          key: pio-${{ hashFiles('firmware/platformio.ini') }}
+      - run: pip install platformio==6.1.16
+      - run: pio run -d firmware
+      - name: Gabungkan menjadi satu berkas siap flash (alamat 0x0)
+        run: |
+          P=~/.platformio/packages
+          for e in uji-kartu hadir uji-kartu-s3 hadir-s3; do
+            B=firmware/.pio/build/$e
+            case $e in *-s3) CHIP=esp32s3; NAMA=${e%-s3}-esp32s3;; *) CHIP=esp32c3; NAMA=$e-esp32c3;; esac
+            python $P/tool-esptoolpy/esptool.py --chip $CHIP merge_bin -o cikaracak-$NAMA.bin \
+              --flash_mode dio --flash_size keep 0x0 $B/bootloader.bin 0x8000 $B/partitions.bin \
+              0xe000 $P/framework-arduinoespressif32/tools/partitions/boot_app0.bin 0x10000 $B/firmware.bin
+          done
+      - name: Pratinjau animasi wajah Ciki
+        run: |
+          sudo apt-get install -y -qq ffmpeg >/dev/null
+          bash tools/firmware/pratinjau/buat.sh "firmware/.pio/libdeps/hadir/Adafruit GFX Library" ciki.gif
+      - uses: actions/upload-artifact@v4
+        with:
+          name: firmware-esp32
+          path: |
+            cikaracak-*-esp32*.bin
+            ciki.gif
