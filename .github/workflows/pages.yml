@@ -1,0 +1,30 @@
+# Terbitkan aplikasi web (folder web/) ke GitHub Pages: https://tomrzetd.github.io/cikaracak/
+# Sekali atur: Settings → Pages → Build and deployment → Source: GitHub Actions.
+name: Pages
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  terbit:
+    name: Terbitkan aplikasi web
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.terbit.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: node tools/cek-web.js
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web
+      - id: terbit
+        uses: actions/deploy-pages@v4
