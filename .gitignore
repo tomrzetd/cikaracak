@@ -19,3 +19,23 @@ android/app/src/main/assets/web/
 # Sistem
 .DS_Store
 Thumbs.db
+
+# Firmware
+firmware/.pio/
+*.bin
+ciki.gif
+
+# Data asli sekolah (nama siswa/guru) TIDAK boleh masuk repositori publik
+*.xlsx
+*.xls
+*.csv
+!tests/**/*.csv
+impor-*.sql
+data-asli/
+
+# Kunci tanda tangan Android: JANGAN di-commit
+*.p12
+*.jks
+*.keystore
+keystore.base64.txt
+KUNCI-RILIS-*.txt

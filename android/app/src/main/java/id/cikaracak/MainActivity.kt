@@ -4,8 +4,10 @@ import android.annotation.SuppressLint
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
+import android.view.View
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
@@ -53,6 +55,12 @@ class MainActivity : AppCompatActivity() {
         WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG)
         web = WebView(this)
         setContentView(web)
+        // Autofill Android ("Sarankan sandi kuat … simpan ke Akun Google") membuka jendela kecil yang merebut fokus
+        // dari kolom sandi di WebView setiap kali satu huruf diketik, sehingga keyboard tertutup dan isian hilang.
+        // Aplikasi ini tidak membutuhkan Autofill, jadi dimatikan untuk seluruh isi WebView.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            web.importantForAutofill = View.IMPORTANT_FOR_AUTOFILL_NO_EXCLUDE_DESCENDANTS
+        }
 
         val pemuat = WebViewAssetLoader.Builder()
             .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(this))

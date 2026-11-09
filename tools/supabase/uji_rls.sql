@@ -116,9 +116,9 @@ rollback;
 begin;
 set local role anon;
 do $$ begin
+  -- Supabase memberi anon hak SELECT bawaan; RLS harus membuat hasilnya kosong (atau ditolak sama sekali).
   begin
-    perform count(*) from public.siswa;
-    raise exception 'GAGAL: pengunjung tanpa login bisa membaca tabel siswa';
+    if (select count(*) from public.siswa) > 0 then raise exception 'GAGAL: pengunjung tanpa login bisa membaca tabel siswa'; end if;
   exception when insufficient_privilege then null;
   end;
 end $$;

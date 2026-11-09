@@ -8,10 +8,11 @@ import * as kelas from './views/kelas.js';
 import * as kuis from './views/kuis.js';
 import * as saran from './views/saran.js';
 import * as riwayat from './views/riwayat.js';
+import * as presensi from './views/presensi.js';
 import * as pengaturan from './views/pengaturan.js';
 
-const VIEWS = { beranda, kelas, kuis, saran, riwayat, pengaturan };
-const JUDUL = { beranda: 'Beranda', kelas: 'Kelas & Siswa', kuis: 'Kuis', saran: 'Saran', riwayat: 'Riwayat & Uji', pengaturan: 'Pengaturan' };
+const VIEWS = { beranda, kelas, kuis, saran, riwayat, presensi, pengaturan };
+const JUDUL = { beranda: 'Beranda', kelas: 'Kelas & Siswa', kuis: 'Kuis', saran: 'Saran', riwayat: 'Riwayat & Uji', presensi: 'Presensi', pengaturan: 'Pengaturan' };
 
 const store = buatStore(penyimpananIDB);
 let aktif = 'beranda';
@@ -54,9 +55,13 @@ function renderKonteks() {
     ? ks.map(k => `<option value="${esc(k.id)}"${k.id === d.aktif.kuisId ? ' selected' : ''}>${esc(k.tanggal)} · ${esc(k.topik)}</option>`).join('')
     : '<option value="">Belum ada kuis</option>';
   if (!d.aktif.kuisId && ks.length) store.pilih(d.aktif.rombelId, ks[0].id);
-  $('#pillContoh').hidden = !d.contoh;
-  $('#namaGuru').textContent = d.guru.nama || 'Guru';
-  $('#avatarGuru').textContent = inisial((d.guru.nama || 'Guru').replace(/^(bu|pak|ibu|bapak)\s+/i, ''));
+  $('#pillContoh').hidden = !d.contoh || aktif === 'presensi';   // data contoh di perangkat tidak berlaku untuk presensi server
+  // Nama di kepala aplikasi: akun server yang sedang masuk; bila tidak, nama guru di perangkat ini.
+  const p = presensi.st.profil;
+  const nama = p?.nama || (!d.contoh && d.guru.nama) || 'Belum masuk';
+  $('#namaGuru').textContent = nama;
+  $('#subGuru').textContent = p ? [presensi.JABATAN[p.peran] || p.peran, p.sekolah?.nama].filter(Boolean).join(' · ') : 'Laun-laun jadi legok';
+  $('#avatarGuru').textContent = nama === 'Belum masuk' ? '?' : inisial(nama.replace(/,.*$/, '').replace(/^((bu|pak|ibu|bapak|h|hj|dr|drs|ir)\.?\s+)+/i, ''));
 }
 $('#pilihRombel').onchange = e => { const ks = store.kuisRombel(e.target.value); store.pilih(e.target.value, ks[0]?.id || null); };
 $('#pilihKuis').onchange = e => store.pilih(store.data.aktif.rombelId, e.target.value || null);
@@ -70,6 +75,7 @@ function go(v) {
   $$('.nav').forEach(b => (b.dataset.v === v ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current')));
   Object.keys(VIEWS).forEach(k => { $('#v-' + k).hidden = k !== v; });
   $('#judulView').textContent = JUDUL[v];
+  $('.konteks').hidden = v === 'presensi';   // kelas & kuis di perangkat tidak berlaku untuk presensi server
   if (location.hash.slice(1) !== v) history.replaceState(null, '', '#' + v);
   render();
   window.scrollTo(0, 0);
@@ -88,8 +94,8 @@ function render() {
       VIEWS[aktif].render(el, ctx);
       for (const [id, nilai, fokus, pos] of sementara) {
         const x = el.querySelector('#' + id);
-        if (!x || !nilai) continue;
-        x.value = nilai;
+        if (!x) continue;
+        if (nilai) x.value = nilai;
         if (fokus) { x.focus(); try { x.setSelectionRange(pos, pos); } catch { /* bukan input teks */ } }
       }
     }
