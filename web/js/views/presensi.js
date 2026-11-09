@@ -8,6 +8,7 @@ import { esc, toast, unduh } from '../util.js';
 import { keCSV } from '../core/impor.js';
 import { kosong } from './bersama.js';
 import * as admin from './presensi-admin.js';
+import * as demo from './presensi-demo.js';
 
 export const st = {
   tab: 'hari', profil: null, rombel: [], rombelId: null, tanggal: null, bulan: null,
@@ -48,9 +49,11 @@ const rombelAktif = () => st.rombel.find(r => r.id === st.rombelId) || null;
 const bolehUbah = () => adalahAdmin() || rombelAktif()?.wali_id === st.profil?.id;
 
 function tabTersedia() {
-  const t = [['hari', 'Hari ini'], ['rekap', 'Rekap bulanan'], ['disapa', 'Perlu disapa']];
+  const t = [['hari', 'Hari ini']];
+  if (lihatSemua()) t.push(['dasbor', 'Dasbor sekolah']);
+  t.push(['rekap', 'Rekap bulanan'], ['disapa', 'Perlu disapa']);
   if (adalahPiket()) t.push(['kartu', 'Kartu siswa']);
-  if (adalahAdmin()) t.push(['alat', 'Alat'], ['jadwal', 'Jadwal'], ['sekolah', 'Pegawai & kelas'], ['simulator', 'Simulator alat']);
+  if (adalahAdmin()) t.push(['demo', 'Uji & demo mesin'], ['alat', 'Alat'], ['jadwal', 'Jadwal'], ['sekolah', 'Pegawai & kelas'], ['simulator', 'Simulator alat']);
   return t;
 }
 
@@ -65,6 +68,7 @@ export async function muatTab(ctx, { diam = false } = {}) {
       if (st.tab === 'disapa' && st.rombelId) st.isi.disapa = await srv.rpc('peringatan_kelas', { p_rombel: st.rombelId, p_hari: 30 });
       if (['kartu', 'alat', 'simulator'].includes(st.tab) && adalahPiket()) st.alat = await srv.daftar('alat', 'id,nama,titik,aktif,versi,antrean,terakhir_kontak', { order: 'nama' });
       await admin.muat(st, ctx);
+      await demo.muat(st);
     }
   } catch (e) {
     st.galat = e.message;
@@ -187,7 +191,7 @@ export function render(el, ctx) {
   }
   const tabs = tabTersedia();
   if (!tabs.some(([k]) => k === st.tab)) st.tab = 'hari';
-  const isi = { hari: tabHari, rekap: tabRekap, disapa: tabDisapa }[st.tab];
+  const isi = { hari: tabHari, rekap: tabRekap, disapa: tabDisapa, dasbor: () => demo.renderDasbor(st), demo: () => demo.renderDemo(st) }[st.tab];
   el.innerHTML = `
     <div class="card clay presensi-kepala">
       <div class="head"><div><h3>${esc(st.profil.sekolah?.nama || 'Sekolah')}</h3>
@@ -209,6 +213,7 @@ function formGantiSandi() {
     <form id="formSandi" class="kolom">
       <label>Sandi baru <input id="sandiBaru" data-sementara type="password" autocomplete="new-password" minlength="8" required></label>
       <label>Ulangi sandi baru <input id="sandiUlang" data-sementara type="password" autocomplete="new-password" minlength="8" required></label>
+      <label class="cek"><input type="checkbox" id="lihatSandi"> Tampilkan sandi</label>
       <div class="row"><button class="btn hijau" type="submit">Simpan sandi</button><button class="btn polos" type="button" data-aksi="keluar">Keluar</button></div>
     </form>${st.galat ? `<p class="status err">${esc(st.galat)}</p>` : ''}</div></div>`;
 }
@@ -259,6 +264,7 @@ export function pasang(el, ctx) {
     if (id === 'presTanggal' && e.target.value) { st.tanggal = e.target.value; muatTab(ctx); }
     if (id === 'presBulan' && e.target.value) { st.bulan = e.target.value; muatTab(ctx); }
     admin.ubahIsian(e, st, ctx);
+    demo.ubahIsian(e, st, ctx, muatTab);
   });
   el.addEventListener('click', async e => {
     const t = e.target.closest('[data-tab]');
@@ -279,7 +285,7 @@ export function pasang(el, ctx) {
         const baris = [['no', 'nama', 'hari_sekolah', 'hadir', 'terlambat', 'menit_terlambat', 'sakit', 'izin', 'alpa', 'belum_tercatat'],
           ...(st.isi.rekap || []).map(x => [x.no_absen, x.nama, x.hari_sekolah, x.hadir, x.terlambat, x.menit_terlambat, x.sakit, x.izin, x.alpa, x.belum])];
         unduh(`presensi-${r?.nama || 'kelas'}-${st.bulan}.csv`, '﻿' + keCSV(baris), 'text/csv;charset=utf-8');
-      } else await admin.aksi(a, b, st, ctx);
+      } else if (!(await demo.aksi(a, b, st, ctx, muatTab))) await admin.aksi(a, b, st, ctx);
     } catch (err) { toast(err.message); }
   });
   // Segarkan daftar hadir tiap 10 detik, tetapi JANGAN saat pengguna sedang mengetik atau di layar sandi:
@@ -289,8 +295,13 @@ export function pasang(el, ctx) {
     if (!el.hidden && st.tab === 'hari' && st.profil && !st.profil.wajib_ganti_sandi && st.rombelId && st.tanggal === tglZona()
         && !st.memuat && !mengetik() && !document.querySelector('#lapis:not([hidden])') && document.visibilityState === 'visible') muatTab(ctx, { diam: true });
   }, 10000);
+  demo.pasang(el, st, ctx, () => !mengetik() && !document.querySelector('#lapis:not([hidden])'));
   // Sesi tersimpan: muat profil di awal agar nama & jabatan langsung tampil di kepala aplikasi.
   if (srv.terhubung() && srv.masukSebagai()) muatTab(ctx, { diam: true });
+  el.addEventListener('change', e => {
+    if (e.target.id !== 'lihatSandi') return;
+    el.querySelectorAll('#sandiBaru, #sandiUlang').forEach(x => { x.type = e.target.checked ? 'text' : 'password'; });
+  });
   el.addEventListener('input', e => {   // saring daftar pegawai tanpa menggambar ulang halaman
     if (e.target.id !== 'cariPegawai') return;
     const q = e.target.value.trim().toLowerCase();

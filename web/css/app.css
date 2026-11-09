@@ -205,3 +205,37 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .
 .pegawai-kepala { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
 .pegawai-kepala b { flex: 1 1 100%; line-height: 1.3; }
 .pegawai-aksi { gap: 6px; margin-top: 4px; }
+
+/* ---------- Dasbor & demo (palet grafik tervalidasi: aman buta warna, terang & gelap) ---------- */
+:root { --c-hadir: #1baf7a; --c-terlambat: #eda100; --c-izin: #2a78d6; --c-tidak: #eb6834; --c-datang: #2a78d6; }
+@media (prefers-color-scheme: dark) { :root { --c-hadir: #199e70; --c-terlambat: #c98500; --c-izin: #3987e5; --c-tidak: #d95926; --c-datang: #3987e5; } }
+.s-hadir { fill: var(--c-hadir); background: var(--c-hadir); }
+.s-terlambat { fill: var(--c-terlambat); background: var(--c-terlambat); }
+.s-izin_sakit { fill: var(--c-izin); background: var(--c-izin); }
+.s-tidak_tercatat { fill: var(--c-tidak); background: var(--c-tidak); }
+.s-datang { fill: var(--c-datang); }
+.grafik { width: 100%; height: auto; display: block; margin-top: 6px; }
+.grafik .grid { stroke: var(--line); stroke-width: 1; }
+.grafik .sumbu { fill: var(--muted); font-size: 11px; font-family: var(--f); }
+.grafik .batas { stroke: var(--ink); stroke-width: 1.5; stroke-dasharray: 4 3; }
+.grafik rect:hover { opacity: .8; }
+.legenda { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: .82rem; color: var(--muted); }
+.legenda i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+.per-kelas { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.baris-kelas { display: grid; grid-template-columns: minmax(48px, max-content) 1fr 40px; gap: 8px; align-items: center; }
+.bar100 { display: flex; gap: 2px; height: 14px; border-radius: 4px; overflow: hidden; background: var(--line); }
+.bar100 i { display: block; min-width: 2px; }
+.langkah { display: flex; flex-direction: column; gap: 4px; margin-top: 10px; }
+.langkah .ok { color: var(--ok); margin: 0; }
+.hasil-uji { font-size: 1.25rem; font-weight: 800; color: var(--ok); margin: 8px 0 0; }
+.denyut { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--c-hadir); animation: denyut 1s ease-in-out infinite; }
+@keyframes denyut { 50% { transform: scale(1.6); opacity: .4; } }
+@media (prefers-reduced-motion: reduce) { .denyut { animation: none; } }
+.tap-besar { display: flex; gap: 16px; align-items: center; padding: 10px 0; }
+.tap-besar h2 { margin: 0 0 4px; }
+.feed { display: flex; flex-direction: column; gap: 4px; }
+.feed-baris { gap: 10px; align-items: baseline; }
+.layar-langsung:fullscreen { display: flex; flex-direction: column; justify-content: center; padding: 6vh 6vw; border-radius: 0; }
+.layar-langsung:fullscreen .tap-besar h2 { font-size: 3.4rem; }
+.layar-langsung:fullscreen .sim-wajah { font-size: 8rem; }
+.layar-langsung:fullscreen .tap-besar p { font-size: 1.5rem; }

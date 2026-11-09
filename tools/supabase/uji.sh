@@ -31,6 +31,7 @@ psql -q -v ON_ERROR_STOP=1 -f "$ROOT/supabase/migrations/20261024000003_ref_cp_2
 psql -q -v ON_ERROR_STOP=1 -f "$ROOT/tools/supabase/uji_rls.sql"
 psql -q -v ON_ERROR_STOP=1 -f "$ROOT/tools/supabase/uji_presensi.sql"
 psql -q -v ON_ERROR_STOP=1 -f "$ROOT/tools/supabase/uji_pegawai.sql"
+psql -q -v ON_ERROR_STOP=1 -f "$ROOT/tools/supabase/uji_dasbor.sql"
 
 # Uji naik versi: migrasi pegawai dijalankan di atas data lama, seperti proyek Supabase yang sudah berjalan
 # (operator dari demo.sql dengan kolom piket lama, kelas, siswa, penugasan mengajar, kuis).
@@ -39,7 +40,7 @@ psql -q -v ON_ERROR_STOP=1 -c "drop database if exists uji_naik" -c "create data
 export PGDATABASE=uji_naik
 psql -q -v ON_ERROR_STOP=1 -f "$ROOT/tools/supabase/stub_auth.sql"
 for f in "$ROOT"/supabase/migrations/*.sql; do
-  case "$(basename "$f")" in 20261110*|20261024000003*) continue;; esac
+  case "$(basename "$f")" in 20261110000001*|20261110000002*|20261024000003*) continue;; esac
   psql -q -v ON_ERROR_STOP=1 -f "$f"
 done
 psql -q -v ON_ERROR_STOP=1 <<'SQL'

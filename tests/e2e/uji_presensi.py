@@ -7,7 +7,7 @@ Alur: sambungkan server -> masuk sebagai operator -> daftar kartu (ketik UID & l
 simulator alat (hadir, terlambat, kartu asing, tanda palsu) -> daftar hadir -> wali mengisi Sakit -> rekap ->
 perlu disapa -> jadwal -> tambah kelas -> keluar -> masuk sebagai wali kelas (hak terbatas).
 """
-import os, subprocess, sys, time
+import hashlib, hmac, json, os, secrets, subprocess, sys, time, urllib.request
 from datetime import datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -26,6 +26,15 @@ def hari_kerja_lalu():
     while d.isoweekday() > 5:
         d -= timedelta(days=1)
     return d.isoformat()
+
+
+def tap_alat(alat, kunci, uid):
+    """Meniru alat ESP32: tap online bertanda HMAC (sama dengan firmware/lib/logika)."""
+    w, n = int(time.time()), secrets.token_hex(8).upper()
+    tanda = hmac.new(bytes.fromhex(kunci), f'{alat}\n{w}\n{n}\n{uid}\n0'.encode(), hashlib.sha256).hexdigest()
+    badan = json.dumps({'p_alat': alat, 'p_uid': uid, 'p_waktu': w, 'p_nonce': n, 'p_offline': False, 'p_tanda': tanda}).encode()
+    req = urllib.request.Request(SERVER + '/rest/v1/rpc/catat_tap', data=badan, headers={'apikey': ANON, 'Content-Type': 'application/json'})
+    return json.load(urllib.request.urlopen(req))
 
 
 def baris(page, no):
@@ -115,6 +124,7 @@ def jalan(page):
     page.click('[data-aksi=buat-alat]')
     expect(page.locator('#hasilKunci')).to_be_visible()
     kunci = page.locator('#hasilKunci').inner_text().strip()
+    id_alat = page.locator('#hasilId').inner_text().strip()
     assert len(kunci) == 64, kunci
     page.screenshot(path=SHOT / 'presensi-2-alat-baru.png')
     page.click('#lapis [data-tutup]')
@@ -187,6 +197,29 @@ def jalan(page):
     expect(page.locator('#toast')).to_contain_text('3 siswa')
     expect(page.locator('#v-presensi')).to_contain_text('VII-B')
     page.screenshot(path=SHOT / 'presensi-5-kelas-guru.png', full_page=True)
+
+    # uji & demo mesin: kelas demo, uji tap dari "alat", layar langsung, dasbor
+    tab(page, 'demo')
+    page.click('[data-aksi=demo-buat]')
+    expect(page.locator('#toast')).to_contain_text('Kelas demo dibuat', timeout=15000)
+    expect(page.locator('#v-presensi')).to_contain_text('DE000001')
+    page.select_option('#ujiAlat', id_alat)
+    page.click('[data-aksi=uji-mulai]')
+    expect(page.locator('#v-presensi')).to_contain_text('Tempelkan kartu apa saja')
+    jawab = tap_alat(id_alat, kunci, 'DE000001')
+    assert jawab.get('nama') == 'Adit', jawab
+    expect(page.locator('.hasil-uji')).to_contain_text('Mesin presensi berfungsi', timeout=8000)
+    expect(page.locator('#layarLangsung')).to_contain_text('Adit')
+    page.screenshot(path=SHOT / 'presensi-6a-uji-mesin.png', full_page=True)
+    page.click('[data-aksi=demo-dasbor]')
+    expect(page.locator('[data-tab=dasbor]')).to_have_attribute('aria-selected', 'true')
+    expect(page.locator('#v-presensi svg.grafik').first).to_be_visible()
+    expect(page.locator('#v-presensi')).to_contain_text('kelas demo')
+    expect(page.locator('#v-presensi .baris-kelas')).to_have_count(1)
+    page.screenshot(path=SHOT / 'presensi-6b-dasbor-demo.png', full_page=True)
+    page.select_option('#dbSumber', '0')
+    expect(page.locator('#v-presensi .baris-kelas')).to_have_count(4)   # VII-A, VII-B, VIII-A, IX-A
+    tab(page, 'sekolah')
 
     # pegawai tanpa akun -> wali IX-A -> akun NIP -> masuk -> wajib ganti sandi
     page.fill('#pgNama', 'Bu Uji Pegawai, S.Pd.')

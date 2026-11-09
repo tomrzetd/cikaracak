@@ -2,7 +2,7 @@
 import { esc, toast, unduh, hariIni, konfirmasiDuaKetuk } from '../util.js';
 import { dataKosong, dataContoh } from '../state.js';
 
-export const VERSI_APP = '0.3.1';
+export const VERSI_APP = '0.4.0';
 
 export function render(el, ctx) {
   const { store } = ctx;
