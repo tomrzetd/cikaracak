@@ -89,7 +89,16 @@ no,uid,jenis,sak,ukuran_uid
 Firmware hanya membaca UID. Isi kartu, nama, dan data pribadi siswa tidak dibaca. UID juga tidak disimpan
 di server dalam bentuk asli: server hanya menyimpan sidik (hash) UID.
 
-## Firmware alat gerbang (`cikaracak-hadir-esp32c3.bin`)
+## Firmware alat gerbang
+
+Ada dua jenis berkas:
+
+| Berkas | Alamat flash | Kapan dipakai |
+|---|---|---|
+| `cikaracak-hadir-esp32c3.bin` (lengkap) | `0x0` | Pemasangan pertama, atau saat alat ingin dikosongkan. **Menghapus semua pengaturan** (WiFi, server, ID & kunci alat) dan antrean offline. |
+| `cikaracak-hadir-esp32c3-pembaruan-0x10000.bin` | `0x10000` | Memperbarui firmware. Pengaturan dan antrean offline **tetap ada**. |
+
+Bila alat sedang dipakai di sekolah, selalu pakai berkas **pembaruan**.
 
 Flash dengan cara yang sama (alamat `0x0`; pilih berkas `-esp32c3` atau `-esp32s3` sesuai papan). Berkas terbaru juga ada di tab **Actions** GitHub,
 artefak `firmware-esp32`, bersama `ciki.gif` (pratinjau animasi).
@@ -132,7 +141,10 @@ yang tersimpan dan belum terkirim (maksimal 2000, dikirim otomatis ketika intern
 | Gejala | Coba |
 |---|---|
 | WiFi sering putus | Dekatkan alat ke router. Firmware sudah memakai daya pancar rendah yang lebih stabil untuk C3 Super Mini. |
-| WiFi HP di dekat alat terganggu / putus | Lihat bagian "Mencegah gangguan WiFi" di bawah. |
+| WiFi HP di dekat alat terganggu / putus | Di HP: **Lupakan** jaringan `Cikaracak-XXXX`. HP yang menyimpannya akan terus berpindah ke WiFi alat (sinyal kuat, tanpa internet) lalu kembali, sehingga terasa putus-sambung. Lihat juga "Mencegah gangguan WiFi" di bawah. |
+| Tulisan kuning di atas layar | Firmware menampilkan sebab WiFi gagal: **"tidak ditemukan (harus 2,4 GHz)"**: router hanya 5 GHz, atau nama WiFi 2,4/5 GHz digabung dan router memaksa 5 GHz. Pisahkan nama WiFi 2,4 GHz atau pakai hotspot HP. **"sandi WiFi salah?"**: atur ulang (tahan BOOT 3 detik). **"server belum menjawab"**: periksa alamat server dan kunci. |
+| WiFi alat (`Cikaracak-XXXX`) tidak muncul | Muncul otomatis saat belum ada WiFi tersimpan, saat **BOOT ditahan 3 detik**, atau bila WiFi tersimpan gagal tersambung 3 menit sejak menyala. |
+| Jam lama muncul | Sejak firmware 0.2.2 jam diambil dari server begitu WiFi tersambung (beberapa detik), tidak hanya dari NTP. |
 | "Kunci alat salah" | Kunci di alat berbeda dengan server. Buat kunci baru di aplikasi, lalu tahan BOOT dan isi ulang. |
 | Gambar berbintik | Kabel SPI terlalu panjang. Kompilasi ulang dengan `-D TFT_SPI_HZ=27000000`. |
 | Jam "--:--" terus | Internet sekolah memblokir NTP. Minta operator jaringan membuka UDP port 123. |

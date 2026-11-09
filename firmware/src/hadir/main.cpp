@@ -22,12 +22,14 @@
 #include <ArduinoJson.h>
 #include <time.h>
 #include <esp_system.h>
+#include <esp_wifi.h>
+#include <sys/time.h>
 #include "pin.h"
 #include "logika.h"
 #include "wajah.h"
 #include "akar_ca.h"
 
-#define VERSI "0.2.1"
+#define VERSI "0.2.2"
 #ifndef ZONA_WAKTU
 #define ZONA_WAKTU "WIB-7"          // WITA-8 / WIT-9 untuk sekolah di zona lain
 #endif
@@ -93,6 +95,18 @@ static char namaSekolah[48] = "";
 
 static bool jamSiap() { return time(nullptr) > 1700000000; }
 
+// Jam dari header "Date" jawaban server (RFC 1123, GMT). Lebih cepat dan lebih andal daripada NTP di jaringan
+// sekolah yang memblokir UDP 123. NTP tetap berjalan dan akan menyempurnakan bila tersedia.
+static void aturJamDariHttp(const String &tgl) {
+  uint32_t t;
+  if (!ck::waktuDariHttp(tgl.c_str(), t)) return;
+  if (!jamSiap() || llabs((long long)t - (long long)time(nullptr)) > 120) {
+    struct timeval tv = {(time_t)t, 0};
+    settimeofday(&tv, nullptr);
+    Serial.printf("[jam] dari server: %s\n", tgl.c_str());
+  }
+}
+
 static void salinAscii(char *ke, size_t n, const char *dari) {   // font layar hanya ASCII
   size_t j = 0;
   for (size_t i = 0; dari && dari[i] && j + 1 < n; i++) {
@@ -152,8 +166,7 @@ static WiFiClient klienBiasa;
 
 static bool posting(const char *fungsi, const char *badan, JsonDocument &doc) {
   if (!cfgLengkap() || WiFi.status() != WL_CONNECTED) return false;
-  bool tls = !strncmp(cfg.server, "https://", 8);
-  if (tls && !jamSiap()) return false;   // sertifikat tidak bisa diperiksa tanpa jam yang benar
+  bool tls = !strncmp(cfg.server, "https://", 8);   // mbedTLS di sini tidak memeriksa tanggal sertifikat: jam tidak wajib
   char url[160];
   snprintf(url, sizeof url, "%s/rest/v1/rpc/%s", cfg.server, fungsi);
   HTTPClient http;
@@ -167,7 +180,10 @@ static bool posting(const char *fungsi, const char *badan, JsonDocument &doc) {
     char auth[280]; snprintf(auth, sizeof auth, "Bearer %s", cfg.anon);
     http.addHeader("Authorization", auth);
   }
+  static const char *KEPALA[] = {"Date"};
+  http.collectHeaders(KEPALA, 1);
   int kode = http.POST((uint8_t *)badan, strlen(badan));
+  if (kode > 0) aturJamDariHttp(http.header("Date"));
   bool ok = false;
   if (kode == 200) {
     ok = !deserializeJson(doc, http.getString());
@@ -247,6 +263,25 @@ static void kirimAntrean() {
   buangAntrean(selesai);
 }
 
+// Belum ada jam: minta jam ke server dengan permintaan ringan (apa pun jawabannya, header Date ikut).
+static uint32_t mintaJamBerikut = 0;
+static void ambilJamServer() {
+  if (jamSiap() || millis() < mintaJamBerikut || !cfg.server[0]) return;
+  mintaJamBerikut = millis() + 20000;
+  bool tls = !strncmp(cfg.server, "https://", 8);
+  char url[140];
+  snprintf(url, sizeof url, "%s/rest/v1/", cfg.server);
+  HTTPClient http;
+  http.setConnectTimeout(4000);
+  http.setTimeout(5000);
+  if (!http.begin(tls ? (WiFiClient &)klienAman : klienBiasa, url)) return;
+  if (cfg.anon[0]) http.addHeader("apikey", cfg.anon);
+  static const char *KEPALA[] = {"Date"};
+  http.collectHeaders(KEPALA, 1);
+  if (http.GET() > 0) aturJamDariHttp(http.header("Date"));
+  http.end();
+}
+
 static void tugasJaringan(void *) {
   klienAman.setCACert(AKAR_CA);
   klienAman.setHandshakeTimeout(6);
@@ -262,6 +297,7 @@ static void tugasJaringan(void *) {
       xQueueSend(qJawaban, &j, 0);
       continue;
     }
+    if (WiFi.status() == WL_CONNECTED && cfg.server[0]) ambilJamServer();
     if (WiFi.status() == WL_CONNECTED && cfgLengkap()) {
       if (millis() > laporBerikut) { lapor(); laporBerikut = millis() + 300000; }
       kirimAntrean();
@@ -309,6 +345,38 @@ static void layarInfo(const char *judul, const char *b1, const char *b2, const c
   dorongLayar();
 }
 
+// ---------------- diagnosa WiFi ----------------
+static volatile uint8_t alasanPutus = 0;
+static volatile bool pernahTersambung = false;
+static char ssidTersimpan[33] = "";
+
+static void bacaSsidTersimpan() {
+  wifi_config_t c;
+  if (esp_wifi_get_config(WIFI_IF_STA, &c) == ESP_OK) snprintf(ssidTersimpan, sizeof ssidTersimpan, "%s", (const char *)c.sta.ssid);
+}
+static const char *artiAlasan(uint8_t a) {
+  switch (a) {
+    case 0: return "menyambung...";
+    case 201: return "tidak ditemukan (harus 2,4 GHz)";
+    case 2: case 15: case 202: case 204: return "sandi WiFi salah?";
+    case 203: return "ditolak router";
+    case 200: case 8: return "sinyal hilang";
+    default: return "putus";
+  }
+}
+static void peristiwaWifi(arduino_event_id_t e, arduino_event_info_t info) {
+  if (e == ARDUINO_EVENT_WIFI_STA_DISCONNECTED) {
+    alasanPutus = info.wifi_sta_disconnected.reason;
+    Serial.printf("[wifi] putus, alasan %u (%s)\n", alasanPutus, artiAlasan(alasanPutus));
+  } else if (e == ARDUINO_EVENT_WIFI_STA_GOT_IP) {
+    alasanPutus = 0; pernahTersambung = true;
+    Serial.printf("[wifi] tersambung %s, IP %s, RSSI %d\n", WiFi.SSID().c_str(), WiFi.localIP().toString().c_str(), WiFi.RSSI());
+  }
+}
+
+static bool wifiDipakai = false;
+static uint32_t cobaSambungBerikut = 0, jedaSambung = 10000;
+
 static const char *HARI[] = {"Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"};
 static const char *BULAN[] = {"Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"};
 static int hariTerakhir = -1;
@@ -323,6 +391,10 @@ static void perbaruiData(struct tm &t, bool adaJam) {
   }
   data.antrean = jumlahAntrean;
   data.online = WiFi.status() == WL_CONNECTED && serverOk;
+  if (!wifiDipakai) snprintf(data.infoWifi, sizeof data.infoWifi, "WiFi belum diatur");
+  else if (WiFi.status() != WL_CONNECTED) snprintf(data.infoWifi, sizeof data.infoWifi, "%s: %s", ssidTersimpan[0] ? ssidTersimpan : "WiFi", artiAlasan(alasanPutus));
+  else if (!serverOk && cfgLengkap()) snprintf(data.infoWifi, sizeof data.infoWifi, "WiFi OK, server belum menjawab");
+  else data.infoWifi[0] = 0;
   data.siapServer = cfgLengkap() && !kunciSalah;
   xSemaphoreTake(kunciData, portMAX_DELAY);
   snprintf(data.sekolah, sizeof data.sekolah, "%s", namaSekolah);
@@ -330,8 +402,6 @@ static void perbaruiData(struct tm &t, bool adaJam) {
 }
 
 // ---------------- mode pengaturan (portal WiFi) ----------------
-static bool wifiDipakai = false;
-static uint32_t cobaSambungBerikut = 0, jedaSambung = 10000;
 static void bukaPortal() {
   if (hJaringan) vTaskSuspend(hJaringan);   // jangan kirim apa pun selama WiFi diatur ulang
   buzzer(false);
@@ -490,10 +560,13 @@ void setup() {
   }
 
   // WiFi: tanpa pengaturan -> langsung portal. Dengan pengaturan -> coba sambung, bila gagal tetap jalan offline.
+  WiFi.onEvent(peristiwaWifi);
   WiFi.mode(WIFI_STA);
 #if WIFI_DAYA_RENDAH
   WiFi.setTxPower(WIFI_POWER_8_5dBm);
 #endif
+  bacaSsidTersimpan();
+  Serial.printf("# WiFi tersimpan: %s\n", ssidTersimpan[0] ? ssidTersimpan : "(belum ada)");
   {
     WiFiManager wm;
     wifiDipakai = wm.getWiFiIsSaved();
@@ -539,6 +612,14 @@ void loop() {
     cekRfid = kini;
     byte v = rfid.PCD_ReadRegister(MFRC522::VersionReg);
     if (v == 0x00 || v == 0xFF) { rfid.PCD_Init(); rfid.PCD_SetAntennaGain(MFRC522::RxGain_max); }
+  }
+
+  // WiFi tersimpan tetapi tidak pernah tersambung 3 menit sejak menyala: buka pengaturan sekali, otomatis.
+  static bool portalOtomatis = false;
+  if (wifiDipakai && !pernahTersambung && !portalOtomatis && kini > 180000) {
+    portalOtomatis = true;
+    Serial.println("# WiFi gagal 3 menit: membuka mode pengaturan");
+    bukaPortal();
   }
 
   // WiFi putus: coba sambung ulang 10 detik, 20, 40, … paling lama tiap 2 menit

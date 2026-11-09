@@ -319,6 +319,7 @@ void Layar::gambarStatus(const DataLayar &d) {
     c_.setTextColor(KUNING); c_.setCursor(W - 44 - lebarTeks(b, &FreeSans9pt7b, 1), 22); c_.print(b);
   }
   c_.setTextColor(ABU); c_.setCursor(18, 22); c_.print(d.jam);
+  if (d.infoWifi[0]) tulisTengah(d.infoWifi, 22, &FreeSans9pt7b, 1, KUNING, W - 150);
 }
 
 void Layar::gambarSiagaBawah(const DataLayar &d, uint32_t ms) {

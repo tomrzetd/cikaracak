@@ -81,6 +81,15 @@ int main() {
   CEK(t.suasana == Suasana::Sedih, "kode tak dikenal = gangguan");
   CEK(!strcmp(ucapan(16), "Selamat sore") && !strcmp(ucapan(12), "Selamat siang") && !strcmp(ucapan(20), "Selamat malam"), "ucapan");
 
+  // jam dari header Date
+  uint32_t w = 0;
+  CEK(waktuDariHttp("Tue, 10 Nov 2026 00:52:01 GMT", w) && w == 1794271921u, "Date RFC 1123");
+  CEK(waktuDariHttp("Thu, 29 Feb 2028 23:59:59 GMT", w) && w == 1835481599u, "Date tahun kabisat");
+  CEK(waktuDariHttp("Sat, 01 Jan 2033 00:00:00 GMT", w) && w == 1988150400u, "Date awal tahun");
+  CEK(!waktuDariHttp("Tue, 10 Xyz 2026 00:52:01 GMT", w), "bulan tidak sah ditolak");
+  CEK(!waktuDariHttp("Thu, 01 Jan 1970 00:00:00 GMT", w), "tahun terlalu lama ditolak");
+  CEK(!waktuDariHttp("", w) && !waktuDariHttp(nullptr, w), "kosong ditolak");
+
   if (gagal) { std::printf("%d uji gagal\n", gagal); return 1; }
   std::printf("Semua uji logika firmware lulus.\n");
   return 0;

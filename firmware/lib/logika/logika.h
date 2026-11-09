@@ -32,6 +32,9 @@ struct Antre {
 size_t tulisAntre(const Antre &a, char *buf, size_t n);
 bool uraiAntre(const char *baris, Antre &a);
 
+// ---- jam dari header HTTP "Date" (RFC 1123, GMT), mis. "Tue, 10 Nov 2026 00:52:01 GMT" ----
+bool waktuDariHttp(const char *teks, uint32_t &detikUnix);
+
 // ---- apa yang ditampilkan setelah jawaban server ----
 enum class Suasana : uint8_t {
   Siaga, Baca, Senang, Terlambat, Kedip, Pulang, Penasaran, Bingung, Bintang, Sedih, Simpan, Tidur

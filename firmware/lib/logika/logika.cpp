@@ -97,6 +97,26 @@ bool uraiAntre(const char *baris, Antre &a) {
   return uidSah(a.uid);
 }
 
+static int64_t hariSipil(int y, unsigned m, unsigned d) {   // hari sejak 1970-01-01 (algoritma H. Hinnant)
+  y -= m <= 2;
+  const int64_t era = (y >= 0 ? y : y - 399) / 400;
+  const unsigned yoe = (unsigned)(y - era * 400);
+  const unsigned doy = (153 * (m + (m > 2 ? -3 : 9)) + 2) / 5 + d - 1;
+  const unsigned doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+  return era * 146097 + (int64_t)doe - 719468;
+}
+
+bool waktuDariHttp(const char *teks, uint32_t &detikUnix) {
+  static const char *BLN = "JanFebMarAprMayJunJulAugSepOctNovDec";
+  int d, y, H, M, S;
+  char mon[4] = "";
+  if (!teks || sscanf(teks, "%*3s, %d %3s %d %d:%d:%d", &d, mon, &y, &H, &M, &S) != 6) return false;
+  const char *p = strstr(BLN, mon);
+  if (!p || strlen(mon) != 3 || (p - BLN) % 3 || y < 2024 || y > 2100 || d < 1 || d > 31 || H > 23 || M > 59 || S > 60) return false;
+  detikUnix = (uint32_t)(hariSipil(y, (unsigned)((p - BLN) / 3 + 1), (unsigned)d) * 86400 + H * 3600 + M * 60 + S);
+  return true;
+}
+
 const char *ucapan(int jamLokal) {
   if (jamLokal >= 3 && jamLokal < 11) return "Selamat pagi";
   if (jamLokal >= 11 && jamLokal < 15) return "Selamat siang";

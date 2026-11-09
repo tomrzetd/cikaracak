@@ -175,6 +175,7 @@ jobs:
             python $P/tool-esptoolpy/esptool.py --chip $CHIP merge_bin -o cikaracak-$NAMA.bin \
               --flash_mode dio --flash_size keep 0x0 $B/bootloader.bin 0x8000 $B/partitions.bin \
               0xe000 $P/framework-arduinoespressif32/tools/partitions/boot_app0.bin 0x10000 $B/firmware.bin
+            cp $B/firmware.bin cikaracak-$NAMA-pembaruan-0x10000.bin   # pembaruan: pengaturan alat tidak terhapus
           done
       - name: Pratinjau animasi wajah Ciki
         run: |

@@ -25,6 +25,7 @@ struct DataLayar {
   uint16_t tapHariIni = 0;
   uint16_t antrean = 0;            // tap offline yang belum terkirim
   bool online = false;
+  char infoWifi[48] = "";         // keadaan WiFi bila bermasalah, tampil kecil di atas
   bool siapServer = true;          // false bila belum diatur (tampilkan petunjuk)
 };
 
