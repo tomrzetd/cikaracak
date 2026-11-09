@@ -94,7 +94,7 @@ def jalan(page):
     page.fill('#masukEmail', 'operator@contoh.sch.id')
     page.fill('#masukSandi', 'salah')
     page.click('#formMasuk button[type=submit]')
-    expect(page.locator('#v-presensi')).to_contain_text('Email atau kata sandi salah')
+    expect(page.locator('#v-presensi')).to_contain_text('kata sandi salah')
     masuk(page, 'operator@contoh.sch.id')
     expect(page.locator('#v-presensi table tr')).to_have_count(11)   # VII-A: 10 siswa + kepala
     page.screenshot(path=SHOT / 'presensi-1-hari-ini.png', full_page=True)
@@ -185,6 +185,44 @@ def jalan(page):
     expect(page.locator('#v-presensi')).to_contain_text('VII-B')
     page.screenshot(path=SHOT / 'presensi-5-kelas-guru.png', full_page=True)
 
+    # pegawai tanpa akun -> wali IX-A -> akun NIP -> masuk -> wajib ganti sandi
+    page.fill('#pgNama', 'Bu Uji Pegawai, S.Pd.')
+    page.click('[data-aksi=tambah-pegawai]')
+    expect(page.locator('#toast')).to_contain_text('Pegawai ditambahkan')
+    pg = page.locator('#v-presensi tr:has([data-aksi=akun-pegawai])', has_text='Bu Uji Pegawai')
+    expect(pg).to_contain_text('belum')
+    idp = pg.locator('[data-aksi=akun-pegawai]').get_attribute('data-pegawai')
+    page.locator('#v-presensi tr:has(select[data-wali])', has_text='IX-A').locator('select[data-wali]').select_option(value=idp)
+    expect(page.locator('#toast')).to_contain_text('Wali kelas disimpan')
+    expect(page.locator('#v-presensi')).not_to_contain_text('Memuat…')
+    page.locator('#v-presensi tr:has([data-aksi=akun-pegawai])', has_text='Bu Uji Pegawai').locator('[data-aksi=akun-pegawai]').click()
+    page.fill('#akunKode', '198001012005012001')
+    page.click('#simpanAkun')
+    expect(page.locator('#hasilSandi')).to_be_visible()
+    sandi_awal = page.locator('#hasilSandi').inner_text().strip()
+    page.screenshot(path=SHOT / 'presensi-6-akun-pegawai.png')
+    page.click('#lapis [data-tutup]')
+    expect(page.locator('#v-presensi tr:has([data-aksi=akun-pegawai])', has_text='Bu Uji Pegawai')).to_contain_text('198001012005012001')
+    page.click('[data-aksi=keluar]')
+    page.fill('#masukEmail', '198001012005012001')
+    page.fill('#masukSandi', sandi_awal)
+    page.click('#formMasuk button[type=submit]')
+    expect(page.locator('#formSandi')).to_be_visible()
+    page.fill('#sandiBaru', 'SandiSaya2026')
+    page.fill('#sandiUlang', 'SandiBeda2026')
+    page.click('#formSandi button[type=submit]')
+    expect(page.locator('#v-presensi')).to_contain_text('tidak sama')
+    page.fill('#sandiUlang', 'SandiSaya2026')
+    page.click('#formSandi button[type=submit]')
+    expect(page.locator('.presensi-kepala')).to_contain_text('Bu Uji Pegawai')
+    expect(page.locator('#presRombel')).to_contain_text('IX-A (perwalian)')
+    page.click('[data-aksi=keluar]')
+    page.fill('#masukEmail', '198001012005012001')
+    page.fill('#masukSandi', sandi_awal)
+    page.click('#formMasuk button[type=submit]')
+    expect(page.locator('#v-presensi')).to_contain_text('kata sandi salah')   # sandi awal tidak berlaku lagi
+    masuk(page, 'operator@contoh.sch.id')
+
     # wali kelas: hanya kelasnya, tanpa menu admin
     page.click('[data-aksi=keluar]')
     masuk(page, 'wali@contoh.sch.id')
@@ -192,7 +230,7 @@ def jalan(page):
     expect(page.locator('#presRombel option')).to_have_count(1)
     expect(page.locator('#presRombel')).to_contain_text('VIII-A (perwalian)')
     expect(page.locator('[data-aksi=ubah-presensi]').first).to_be_visible()
-    page.screenshot(path=SHOT / 'presensi-6-wali.png', full_page=True)
+    page.screenshot(path=SHOT / 'presensi-7-wali.png', full_page=True)
 
 
 def ponsel(page):

@@ -28,9 +28,11 @@ begin
     insert into public.sekolah (nama, jenjang, zona) values ('SMPN 2 Jalaksana', 'SMP', 'Asia/Jakarta') returning id into v_sekolah;
   end if;
 
-  insert into public.pengguna (id, sekolah_id, nama, peran, piket)
-    values (v_admin, v_sekolah, 'Operator Sekolah', 'admin', true)
-    on conflict (id) do update set sekolah_id = excluded.sekolah_id, peran = 'admin', piket = true, aktif = true;
+  if not exists (select 1 from public.pengguna where akun_id = v_admin) then
+    insert into public.pengguna (id, sekolah_id, nama, peran, akun_id)
+      values (v_admin, v_sekolah, 'Operator Sekolah', 'admin', v_admin);
+  end if;
+  update public.pengguna set sekolah_id = v_sekolah, peran = 'admin', aktif = true where akun_id = v_admin;
 
   -- Senin–Kamis 07.00–14.00, Jumat 07.00–11.00, toleransi 10 menit. Sabtu–Minggu libur.
   insert into public.jadwal (sekolah_id, hari, jam_masuk, toleransi_menit, jam_pulang)

@@ -5,7 +5,8 @@
 //
 //   RAHASIA=... AKUN='[{"email":"a@b","sandi":"x","id":"uuid"}]' PGRST=http://127.0.0.1:3000 node tools/supabase/gerbang.mjs 54321
 import { createServer, request } from 'node:http';
-import { createHmac, randomBytes } from 'node:crypto';
+import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
 
 const PORT = Number(process.argv[2]) || 54321;
 const RAHASIA = process.env.RAHASIA;
@@ -20,6 +21,27 @@ function jwt(isi) {
 }
 export const ANON = jwt({ role: 'anon', iss: 'cikaracak-uji', iat: 1700000000, exp: 4102444800 });
 const segar = new Map();   // refresh token -> akun
+
+// Akun yang dibuat atur_akun() tersimpan di auth.users (sandi bcrypt). Diperiksa lewat psql (PGHOST dkk. dari lingkungan).
+function sql(perintah, vars) {
+  const arg = ['-At', '-v', 'ON_ERROR_STOP=1', ...Object.entries(vars).flatMap(([k, v]) => ['-v', `${k}=${v}`])];
+  return execFileSync('psql', arg, { input: perintah + '\n', encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'] }).trim();
+}
+function akunDb(email, sandi) {
+  try {
+    const id = sql("select id from auth.users where lower(email) = lower(:'e') and encrypted_password is not null and encrypted_password = crypt(:'p', encrypted_password);", { e: email, p: sandi });
+    return id ? { id, email: email.toLowerCase() } : null;
+  } catch { return null; }
+}
+function bacaJwt(h) {
+  const t = String(h || '').replace(/^Bearer /, '').split('.');
+  if (t.length !== 3) return null;
+  const tanda = createHmac('sha256', RAHASIA).update(`${t[0]}.${t[1]}`).digest();
+  const ada = Buffer.from(t[2], 'base64url');
+  if (ada.length !== tanda.length || !timingSafeEqual(ada, tanda)) return null;
+  const isi = JSON.parse(Buffer.from(t[1], 'base64url').toString());
+  return isi.exp > Date.now() / 1000 ? isi : null;
+}
 
 function token(a) {
   const r = randomBytes(18).toString('base64url');
@@ -45,7 +67,8 @@ createServer(async (req, res) => {
   if (url.pathname === '/auth/v1/token' && req.method === 'POST') {
     let j = {}; try { j = JSON.parse(await badan(req) || '{}'); } catch { /* kosong */ }
     if (url.searchParams.get('grant_type') === 'password') {
-      const a = AKUN.find(x => x.email.toLowerCase() === String(j.email || '').toLowerCase() && x.sandi === j.password);
+      const a = AKUN.find(x => x.email.toLowerCase() === String(j.email || '').toLowerCase() && x.sandi === j.password)
+        || akunDb(String(j.email || ''), String(j.password || ''));
       return a ? kirim(res, 200, token(a)) : kirim(res, 400, { code: 400, error_code: 'invalid_credentials', msg: 'Invalid login credentials' });
     }
     if (url.searchParams.get('grant_type') === 'refresh_token') {
@@ -57,6 +80,15 @@ createServer(async (req, res) => {
     return kirim(res, 400, { msg: 'grant_type tidak dikenal' });
   }
   if (url.pathname === '/auth/v1/logout') return kirim(res, 204);
+  if (url.pathname === '/auth/v1/user' && req.method === 'PUT') {
+    const isi = bacaJwt(req.headers.authorization);
+    if (!isi?.sub) return kirim(res, 401, { msg: 'Invalid JWT' });
+    let j = {}; try { j = JSON.parse(await badan(req) || '{}'); } catch { /* kosong */ }
+    if (String(j.password || '').length < 6) return kirim(res, 422, { code: 422, error_code: 'weak_password', msg: 'Password should be at least 6 characters.' });
+    try { sql("update auth.users set encrypted_password = crypt(:'p', gen_salt('bf')), updated_at = now() where id = :'u';", { p: j.password, u: isi.sub }); }
+    catch { return kirim(res, 500, { msg: 'Gagal menyimpan sandi' }); }
+    return kirim(res, 200, { id: isi.sub, email: isi.email });
+  }
 
   if (url.pathname.startsWith('/rest/v1/')) {
     const h = { ...req.headers };

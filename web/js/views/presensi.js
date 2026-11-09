@@ -1,7 +1,8 @@
 // Halaman Presensi (Cikaracak Hadir): tersambung ke server sekolah, berbeda dari halaman lain yang offline.
 //  • Semua guru: daftar hadir hari ini, rekap bulanan, "perlu disapa".
 //  • Wali kelas & admin: mengisi Sakit/Izin/Alpa beserta alasan.
-//  • Admin/piket: kartu siswa. Admin: alat, jadwal, kelas & guru, simulator alat.
+//  • Kepala sekolah, wakasek, kesiswaan, piket (pada harinya): melihat semua kelas.
+//  • Operator/piket: kartu siswa. Operator: alat, jadwal, pegawai & kelas, simulator alat.
 import * as srv from '../server/supabase.js';
 import { esc, toast, unduh } from '../util.js';
 import { keCSV } from '../core/impor.js';
@@ -28,15 +29,28 @@ export function detikDariLokal(nilai) {
   if (!m) throw new Error('Isi tanggal dan jam');
   return Math.floor(Date.UTC(+m[1], m[2] - 1, +m[3], +m[4], +m[5]) / 1000) - (OFFSET[zona()] ?? 7) * 3600;
 }
+export const JABATAN = { admin: 'Operator', kepsek: 'Kepala sekolah', guru: 'Guru', tu: 'Tenaga TU' };
+export const TUGAS = { piket: 'Piket', bendahara: 'Bendahara', keuangan: 'Keuangan', pustakawan: 'Perpustakaan',
+  wakasek: 'Wakasek', kurikulum: 'Kurikulum', kesiswaan: 'Kesiswaan', kepala_lab: 'Kepala lab' };
+export const HARI_PENDEK = ['', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+export const hariIniIso = () => ({ Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6, Sun: 7 })[new Intl.DateTimeFormat('en-US', { timeZone: zona(), weekday: 'short' }).format(new Date())];
+const punyaTugas = j => (st.profil?.tugas || []).some(t => t.jenis === j);
 export const adalahAdmin = () => st.profil?.peran === 'admin';
-export const adalahPiket = () => adalahAdmin() || !!st.profil?.piket;
+// Sama dengan saya_piket() dan saya_lihat_semua() di server
+export const adalahPiket = () => adalahAdmin() || (st.profil?.tugas || []).some(t => t.jenis === 'piket' && t.hari === hariIniIso());
+const lihatSemua = () => ['admin', 'kepsek'].includes(st.profil?.peran) || punyaTugas('wakasek') || punyaTugas('kesiswaan') || adalahPiket();
+export function ringkasTugas(tugas = []) {
+  const piket = tugas.filter(t => t.jenis === 'piket').map(t => t.hari).sort();
+  return [...(piket.length ? [`Piket ${piket.map(h => HARI_PENDEK[h]).join(', ')}`] : []),
+          ...tugas.filter(t => t.jenis !== 'piket').map(t => TUGAS[t.jenis] || t.jenis)];
+}
 const rombelAktif = () => st.rombel.find(r => r.id === st.rombelId) || null;
 const bolehUbah = () => adalahAdmin() || rombelAktif()?.wali_id === st.profil?.id;
 
 function tabTersedia() {
   const t = [['hari', 'Hari ini'], ['rekap', 'Rekap bulanan'], ['disapa', 'Perlu disapa']];
   if (adalahPiket()) t.push(['kartu', 'Kartu siswa']);
-  if (adalahAdmin()) t.push(['alat', 'Alat'], ['jadwal', 'Jadwal'], ['sekolah', 'Kelas & guru'], ['simulator', 'Simulator alat']);
+  if (adalahAdmin()) t.push(['alat', 'Alat'], ['jadwal', 'Jadwal'], ['sekolah', 'Pegawai & kelas'], ['simulator', 'Simulator alat']);
   return t;
 }
 
@@ -63,8 +77,8 @@ export async function muatTab(ctx, { diam = false } = {}) {
 async function muatProfil() {
   const u = srv.masukSebagai();
   if (!u) return;
-  const p = await srv.daftar('pengguna', 'id,nama,peran,piket,sekolah_id,sekolah(nama,zona)', { id: 'eq.' + u.id });
-  if (!p.length) { st.galat = 'Akun ini belum terdaftar di sekolah mana pun. Minta admin menambahkan email Anda di Presensi → Kelas & guru.'; return; }
+  const p = await srv.daftar('pengguna', 'id,nama,peran,wajib_ganti_sandi,sekolah_id,sekolah(nama,zona),tugas(jenis,hari)', { akun_id: 'eq.' + u.id });
+  if (!p.length) { st.galat = 'Akun ini belum tersambung ke data pegawai, atau sudah dinonaktifkan. Hubungi operator sekolah.'; return; }
   st.profil = p[0];
   st.rombel = await srv.daftar('rombel', 'id,nama,tingkat,tahun_ajaran,wali_id', { order: 'tingkat,nama' });
   const wali = st.rombel.find(r => r.wali_id === st.profil.id);
@@ -97,7 +111,7 @@ function formMasuk() {
     <h3>Masuk</h3>
     <p class="muted kecil">Server: ${esc(srv.pengaturan()?.url)}</p>
     <form id="formMasuk" class="kolom">
-      <label>Email <input id="masukEmail" data-sementara type="email" autocomplete="username" required></label>
+      <label>NIP / PegID <input id="masukEmail" data-sementara autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="ID login dari operator sekolah" required></label>
       <label>Kata sandi <input id="masukSandi" type="password" autocomplete="current-password" required></label>
       <div class="row"><button class="btn hijau" type="submit">Masuk</button><button class="btn polos" type="button" data-aksi="ganti-server">Ganti server</button></div>
     </form>
@@ -163,13 +177,22 @@ export function render(el, ctx) {
     if (!st.memuat && !st.galat) muatTab(ctx);
     return;
   }
+  if (st.profil.wajib_ganti_sandi) { el.innerHTML = formGantiSandi(); return; }
+  if (st.profil.peran === 'tu' && !st.rombel.length) {
+    el.innerHTML = `<div class="card clay"><h3>Halo, ${esc(st.profil.nama)}</h3>
+      <p>${esc(['Tenaga TU', ...ringkasTugas(st.profil.tugas)].join(' · '))}</p>
+      <p class="muted">Menu Keuangan (koperasi, tabungan siswa, kegiatan) dan Perpustakaan (peminjaman buku) sedang disiapkan.</p>
+      <div class="row"><button class="btn polos" data-aksi="keluar">Keluar</button></div></div>`;
+    return;
+  }
   const tabs = tabTersedia();
   if (!tabs.some(([k]) => k === st.tab)) st.tab = 'hari';
   const isi = { hari: tabHari, rekap: tabRekap, disapa: tabDisapa }[st.tab];
   el.innerHTML = `
     <div class="card clay presensi-kepala">
       <div class="head"><div><h3>${esc(st.profil.sekolah?.nama || 'Sekolah')}</h3>
-        <p>${esc(st.profil.nama)} · ${adalahAdmin() ? 'admin' : st.profil.piket ? 'guru piket' : 'guru'} · ${esc(srv.masukSebagai().email || '')}</p></div>
+        <p>${esc(st.profil.nama)} · ${esc([JABATAN[st.profil.peran] || st.profil.peran, ...ringkasTugas(st.profil.tugas)].join(' · '))}</p>
+        <p class="muted kecil">${esc(srv.idDariEmail(srv.masukSebagai().email || ''))}</p></div>
         <button class="btn kecil polos" data-aksi="keluar">Keluar</button></div>
       <div class="row tab-presensi" role="tablist">${tabs.map(([k, l]) => `<button class="btn kecil${k === st.tab ? ' hijau' : ' polos'}" role="tab" aria-selected="${k === st.tab}" data-tab="${k}">${l}</button>`).join('')}</div>
     </div>
@@ -178,6 +201,16 @@ export function render(el, ctx) {
       ? kosong('Belum ada kelas', adalahAdmin() ? 'Tambahkan kelas dan siswa di tab Kelas & guru.' : 'Admin sekolah belum menambahkan kelas, atau Anda belum ditugaskan mengajar.')
       : isi ? isi() : admin.render(st, ctx)}
     ${st.memuat ? '<p class="muted kecil">Memuat…</p>' : ''}`;
+}
+
+function formGantiSandi() {
+  return `<div class="cols"><div class="card clay"><h3>Buat sandi baru</h3>
+    <p class="muted kecil">Ini masuk pertama Anda (atau sandi baru saja direset operator). Buat sandi pribadi yang hanya Anda ketahui.</p>
+    <form id="formSandi" class="kolom">
+      <label>Sandi baru <input id="sandiBaru" data-sementara type="password" autocomplete="new-password" minlength="8" required></label>
+      <label>Ulangi sandi baru <input id="sandiUlang" data-sementara type="password" autocomplete="new-password" minlength="8" required></label>
+      <div class="row"><button class="btn hijau" type="submit">Simpan sandi</button><button class="btn polos" type="button" data-aksi="keluar">Keluar</button></div>
+    </form>${st.galat ? `<p class="status err">${esc(st.galat)}</p>` : ''}</div></div>`;
 }
 
 function bukaUbah(ctx, siswaId) {
@@ -199,6 +232,18 @@ function bukaUbah(ctx, siswaId) {
 
 export function pasang(el, ctx) {
   el.addEventListener('submit', async e => {
+    if (e.target.id === 'formSandi') {
+      e.preventDefault();
+      const a = el.querySelector('#sandiBaru').value, b = el.querySelector('#sandiUlang').value;
+      try {
+        if (a.length < 8) throw new Error('Sandi minimal 8 karakter');
+        if (a !== b) throw new Error('Kedua sandi tidak sama');
+        await srv.gantiSandi(a);
+        await srv.rpc('sandi_sudah_diganti');
+        st.galat = ''; st.profil = null; toast('Sandi tersimpan'); muatTab(ctx);
+      } catch (err) { st.galat = err.message; ctx.render(); }
+      return;
+    }
     if (e.target.id !== 'formMasuk') return;
     e.preventDefault();
     try {

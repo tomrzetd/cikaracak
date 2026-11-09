@@ -2,7 +2,7 @@
 import * as srv from '../server/supabase.js';
 import { esc, toast, salin, konfirmasiDuaKetuk } from '../util.js';
 import { tapBertanda, teksHasil, rapikanUid } from '../core/tanda.js';
-import { muatTab, adalahAdmin, tglZona, detikDariLokal } from './presensi.js';
+import { muatTab, adalahAdmin, tglZona, detikDariLokal, JABATAN, TUGAS, HARI_PENDEK, ringkasTugas } from './presensi.js';
 
 const HARI = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
 const TITIK = { gerbang: 'Gerbang', kantin: 'Kantin', perpustakaan: 'Perpustakaan' };
@@ -14,7 +14,7 @@ export async function muat(st) {
     st.isi.libur = await srv.daftar('kalender_libur', 'tanggal,keterangan', { tanggal: 'gte.' + tglZona(new Date(Date.now() - 30 * 864e5)), order: 'tanggal' });
   }
   if (st.tab === 'sekolah') {
-    st.isi.guru = await srv.daftar('pengguna', 'id,nama,peran,piket,aktif', { order: 'nama' });
+    st.isi.guru = await srv.daftar('pengguna', 'id,nama,peran,aktif,kode_login,akun_id,tugas(jenis,hari)', { order: 'nama' });
     st.isi.kelasSiswa = await srv.daftar('rombel', 'id,nama,tingkat,tahun_ajaran,wali_id', { order: 'tingkat,nama' });
     const siswa = await srv.daftar('siswa', 'rombel_id', { aktif: 'is.true' });
     st.isi.jumlahSiswa = siswa.reduce((m, s) => ({ ...m, [s.rombel_id]: (m[s.rombel_id] || 0) + 1 }), {});
@@ -97,12 +97,24 @@ function tabSekolah(st, ctx) {
     <div class="row"><button class="btn hijau" data-aksi="simpan-kelas">Simpan ke server</button>
       ${lokal.length ? `<select id="skLokal" aria-label="Kelas di perangkat">${lokal.map(r => `<option value="${esc(r.id)}">${esc(r.nama)}</option>`).join('')}</select><button class="btn polos" data-aksi="isi-lokal">Isi dari kelas di perangkat</button>` : ''}</div>
     <p class="muted kecil">Hanya nama yang dikirim ke server. Foto siswa tetap di perangkat.</p></div>
-    <div class="card clay"><h3>Guru & petugas</h3>
-    ${guru.map(g => `<div class="row"><b>${esc(g.nama)}</b> <span class="pill ${g.peran === 'admin' ? 'sky' : 'kosong'}">${g.peran}</span>${g.piket ? '<span class="pill singkat">piket</span>' : ''}</div>`).join('')}
-    <h3>Tambah guru</h3><p class="muted kecil">Guru membuat akun sendiri dulu (atau dibuatkan di Supabase → Authentication). Lalu masukkan emailnya di sini.</p>
-    <label>Email <input id="ugEmail" data-sementara type="email"></label><label>Nama <input id="ugNama" data-sementara maxlength="80"></label>
-    <div class="row"><label>Peran <select id="ugPeran"><option value="guru">Guru</option><option value="admin">Admin</option></select></label><label class="cek"><input type="checkbox" id="ugPiket"> Petugas piket</label></div>
-    <div class="row"><button class="btn hijau" data-aksi="undang-guru">Tambahkan</button></div></div></div>`;
+    <div class="card clay"><h3>Pegawai (${guru.filter(g => g.aktif).length})</h3>
+    <p class="muted kecil">Jabatan tetap; mapel, wali kelas, dan piket adalah tugas. Pegawai tanpa akun tetap bisa menjadi wali kelas.
+      Akun memakai ID login NIP/PegID dengan sandi awal dari operator; pegawai wajib menggantinya saat masuk pertama.</p>
+    <div class="tablebox"><table><tr><th class="l">Nama</th><th class="l">Jabatan</th><th class="l">Tugas</th><th class="l">Akun</th><th class="l"></th></tr>
+    ${guru.map(g => { const saya = g.id === st.profil.id; return `<tr${g.aktif ? '' : ' class="muted"'}><td class="l">${esc(g.nama)}</td>
+      <td class="l"><select data-jabatan="${esc(g.id)}" aria-label="Jabatan ${esc(g.nama)}"${saya ? ' disabled title="Jabatan sendiri tidak bisa diubah"' : ''}>${Object.entries(JABATAN).map(([k, l]) => `<option value="${k}"${k === g.peran ? ' selected' : ''}>${l}</option>`).join('')}</select></td>
+      <td class="l kecil">${esc(ringkasTugas(g.tugas).join(' · ') || '—')}</td>
+      <td class="l kecil">${g.akun_id ? (g.kode_login ? `<code>${esc(g.kode_login)}</code>` : 'akun email') : '<span class="muted">belum</span>'}</td>
+      <td class="l"><div class="row" style="gap:6px">
+        <button class="btn kecil hijau" data-aksi="akun-pegawai" data-pegawai="${esc(g.id)}">${g.akun_id ? 'Reset sandi' : 'Buat akun'}</button>
+        <button class="btn kecil polos" data-aksi="tugas-pegawai" data-pegawai="${esc(g.id)}">Tugas</button>
+        ${saya ? '' : `<button class="btn kecil ${g.aktif ? 'bahaya' : 'polos'}" data-aksi="aktif-pegawai" data-pegawai="${esc(g.id)}" data-nilai="${g.aktif ? '0' : '1'}">${g.aktif ? 'Nonaktifkan' : 'Aktifkan'}</button>`}
+      </div></td></tr>`; }).join('')}
+    </table></div>
+    <h3>Tambah pegawai</h3>
+    <div class="row"><label>Nama lengkap <input id="pgNama" data-sementara maxlength="80" placeholder="mis. Siti Aminah, S.Pd."></label>
+      <label>Jabatan <select id="pgJabatan">${Object.entries(JABATAN).map(([k, l]) => `<option value="${k}"${k === 'guru' ? ' selected' : ''}>${l}</option>`).join('')}</select></label></div>
+    <div class="row"><button class="btn hijau" data-aksi="tambah-pegawai">Tambahkan</button></div></div></div>`;
 }
 
 function tabSimulator(st) {
@@ -128,10 +140,64 @@ export function ubahIsian(e, st, ctx) {
   if (e.target.id === 'pilihAlat' || e.target.id === 'simAlat') st.sim.alat = e.target.value;
   if (e.target.id === 'simKunci') st.sim.kunci = e.target.value.trim();
   if (e.target.id === 'simOffline') st.sim.offline = e.target.checked;
+  if (e.target.dataset.jabatan !== undefined) {
+    srv.ubah('pengguna', { id: 'eq.' + e.target.dataset.jabatan }, { peran: e.target.value })
+      .then(() => { toast('Jabatan disimpan'); muatTab(ctx, { diam: true }); }).catch(err => toast(err.message));
+  }
   if (e.target.dataset.wali !== undefined) {
     srv.ubah('rombel', { id: 'eq.' + e.target.dataset.wali }, { wali_id: e.target.value || null })
       .then(() => { toast('Wali kelas disimpan'); st.profil = null; muatTab(ctx); }).catch(err => toast(err.message));
   }
+}
+
+// Sandi awal acak yang mudah dibacakan: tanpa huruf/angka yang mirip (O/0, l/1)
+function sandiAcak() {
+  const h = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  return [...crypto.getRandomValues(new Uint8Array(10))].map(b => h[b % h.length]).join('');
+}
+
+function bukaAkun(ctx, st, id) {
+  const g = (st.isi.guru || []).find(x => x.id === id);
+  if (!g) return;
+  const sandi = sandiAcak();
+  const isi = ctx.buka(`<h2>${g.akun_id ? 'Reset sandi' : 'Buat akun'}: ${esc(g.nama)}</h2>
+    <label>ID login (NIP atau PegID) <input id="akunKode" value="${esc(g.kode_login || '')}" maxlength="30" autocapitalize="none" spellcheck="false" placeholder="mis. 198001012005012001"></label>
+    <label>Sandi awal <input id="akunSandi" value="${sandi}" maxlength="64"></label>
+    <p class="muted kecil">Berikan ID dan sandi awal langsung kepada yang bersangkutan (jangan lewat grup). Ia wajib membuat sandi sendiri saat masuk pertama.</p>
+    <div class="row"><button class="btn hijau" id="simpanAkun">${g.akun_id ? 'Reset sandi' : 'Buat akun'}</button><button class="btn polos" data-tutup>Batal</button></div>`, { sempit: true });
+  isi.querySelector('#simpanAkun').onclick = async () => {
+    try {
+      const kode = isi.querySelector('#akunKode').value.trim(), s = isi.querySelector('#akunSandi').value;
+      const j = await srv.rpc('atur_akun', { p_pengguna: id, p_kode: kode, p_sandi: s });
+      isi.innerHTML = `<h2>Akun ${esc(g.nama)}</h2>
+        <p>ID login: <b><code id="hasilKode">${esc(j.kode)}</code></b></p><p>Sandi awal: <b><code id="hasilSandi">${esc(s)}</code></b></p>
+        <p class="status err">Sandi awal hanya tampil sekali ini. Salin atau catat sekarang.</p>
+        <div class="row"><button class="btn polos" id="salinAkun">Salin ID & sandi</button><button class="btn hijau" data-tutup>Selesai</button></div>`;
+      isi.querySelector('#salinAkun').onclick = () => salin(`ID login: ${j.kode}\nSandi awal: ${s}`, 'Disalin');
+      muatTab(ctx, { diam: true });
+    } catch (e) { toast(e.message); }
+  };
+}
+
+function bukaTugas(ctx, st, id) {
+  const g = (st.isi.guru || []).find(x => x.id === id);
+  if (!g) return;
+  const ada = (j, h = null) => (g.tugas || []).some(t => t.jenis === j && (t.hari ?? null) === h);
+  const isi = ctx.buka(`<h2>Tugas: ${esc(g.nama)}</h2>
+    <p class="muted kecil">Piket berlaku hanya pada hari yang dicentang: melihat semua kelas dan mendaftarkan kartu.</p>
+    <div class="row">${[1, 2, 3, 4, 5, 6].map(h => `<label class="cek"><input type="checkbox" data-piket="${h}"${ada('piket', h) ? ' checked' : ''}> Piket ${HARI_PENDEK[h]}</label>`).join('')}</div>
+    <div class="row">${Object.entries(TUGAS).filter(([k]) => k !== 'piket').map(([k, l]) => `<label class="cek"><input type="checkbox" data-tugas="${k}"${ada(k) ? ' checked' : ''}> ${l}</label>`).join('')}</div>
+    <p class="muted kecil">Wali kelas diatur di tabel Kelas; mapel yang diampu ikut dari impor data.</p>
+    <div class="row"><button class="btn hijau" id="simpanTugas">Simpan</button><button class="btn polos" data-tutup>Batal</button></div>`, { sempit: true });
+  isi.querySelector('#simpanTugas').onclick = async () => {
+    try {
+      const baris = [...isi.querySelectorAll('[data-piket]:checked')].map(x => ({ sekolah_id: st.profil.sekolah_id, pengguna_id: id, jenis: 'piket', hari: Number(x.dataset.piket) }))
+        .concat([...isi.querySelectorAll('[data-tugas]:checked')].map(x => ({ sekolah_id: st.profil.sekolah_id, pengguna_id: id, jenis: x.dataset.tugas, hari: null })));
+      await srv.hapus('tugas', { pengguna_id: 'eq.' + id });
+      if (baris.length) await srv.tambah('tugas', baris);
+      ctx.tutup(); toast('Tugas disimpan'); muatTab(ctx, { diam: true });
+    } catch (e) { toast(e.message); }
+  };
 }
 
 function tampilKunci(ctx, st, j, judul) {
@@ -247,12 +313,18 @@ export async function aksi(a, b, st, ctx) {
     document.getElementById('skSiswa').value = ''; document.getElementById('skNama').value = '';
     toast(`Tersimpan: ${baris.length} siswa`); st.profil = null; return muatTab(ctx);
   }
-  if (a === 'undang-guru') {
-    if (!v('ugEmail') || !v('ugNama')) throw new Error('Isi email dan nama');
-    await srv.rpc('undang_pengguna', { p_email: v('ugEmail'), p_nama: v('ugNama'), p_peran: v('ugPeran') || 'guru', p_piket: document.getElementById('ugPiket').checked });
-    ['ugEmail', 'ugNama'].forEach(id => { document.getElementById(id).value = ''; });
-    toast('Guru ditambahkan'); return muatTab(ctx, { diam: true });
+  if (a === 'tambah-pegawai') {
+    if (!v('pgNama')) throw new Error('Isi nama pegawai');
+    await srv.tambah('pengguna', [{ sekolah_id: st.profil.sekolah_id, nama: v('pgNama').slice(0, 80), peran: v('pgJabatan') || 'guru' }]);
+    document.getElementById('pgNama').value = '';
+    toast('Pegawai ditambahkan'); return muatTab(ctx, { diam: true });
   }
+  if (a === 'aktif-pegawai') {
+    await srv.ubah('pengguna', { id: 'eq.' + b.dataset.pegawai }, { aktif: b.dataset.nilai === '1' });
+    return muatTab(ctx, { diam: true });
+  }
+  if (a === 'akun-pegawai') return bukaAkun(ctx, st, b.dataset.pegawai);
+  if (a === 'tugas-pegawai') return bukaTugas(ctx, st, b.dataset.pegawai);
   if (a === 'uid-acak') { document.getElementById('simUid').value = [...crypto.getRandomValues(new Uint8Array(4))].map(x => x.toString(16).padStart(2, '0')).join('').toUpperCase(); return; }
   if (a === 'sim-tap') {
     st.sim.kunci = v('simKunci'); st.sim.alat = v('simAlat') || st.sim.alat;

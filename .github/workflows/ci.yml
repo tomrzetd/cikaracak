@@ -139,12 +139,12 @@ jobs:
         run: |
           APK=$(ls android/app/build/outputs/apk/release/*.apk | head -1)
           "$ANDROID_HOME"/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)/apksigner verify --print-certs "$APK" | grep -i "SHA-256"
-          mv "$APK" cikaracak-0.2.0-rilis.apk
+          mv "$APK" cikaracak-rilis.apk
       - uses: actions/upload-artifact@v4
         if: env.ADA_KUNCI == '1'
         with:
           name: cikaracak-release-apk
-          path: cikaracak-0.2.0-rilis.apk
+          path: cikaracak-rilis.apk
       - run: rm -f "$RUNNER_TEMP/rilis.p12"
         if: always()
 

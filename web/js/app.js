@@ -55,7 +55,7 @@ function renderKonteks() {
     ? ks.map(k => `<option value="${esc(k.id)}"${k.id === d.aktif.kuisId ? ' selected' : ''}>${esc(k.tanggal)} · ${esc(k.topik)}</option>`).join('')
     : '<option value="">Belum ada kuis</option>';
   if (!d.aktif.kuisId && ks.length) store.pilih(d.aktif.rombelId, ks[0].id);
-  $('#pillContoh').hidden = !d.contoh;
+  $('#pillContoh').hidden = !d.contoh || aktif === 'presensi';   // data contoh di perangkat tidak berlaku untuk presensi server
   $('#namaGuru').textContent = d.guru.nama || 'Guru';
   $('#avatarGuru').textContent = inisial((d.guru.nama || 'Guru').replace(/^(bu|pak|ibu|bapak)\s+/i, ''));
 }

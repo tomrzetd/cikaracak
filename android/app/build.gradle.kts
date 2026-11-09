@@ -11,8 +11,8 @@ android {
         applicationId = "id.cikaracak"
         minSdk = 24          // Android 7.0 — mencakup sebagian besar HP guru
         targetSdk = 35
-        versionCode = 2
-        versionName = "0.2.0"
+        versionCode = 3
+        versionName = "0.3.0"
     }
 
     // Kunci rilis dibaca dari variabel lingkungan (CI: GitHub Secrets). Kunci TIDAK pernah disimpan di repositori.

@@ -34,15 +34,36 @@ Kartu ─► Alat ESP32 ──POST /rest/v1/rpc/catat_tap (kunci anon + tanda HM
 Hasil lain untuk layar alat: `terdaftar`, `kartu_terpakai`, `tidak_dikenal`, `nonaktif`, `kedaluwarsa`
 (antrean offline > 7 hari), `waktu_salah`, `tanda_salah`, `format_salah`.
 
-## Siapa boleh apa
+## Pegawai, jabatan, tugas, dan akun
 
-| Peran | Boleh |
+Data pegawai (`pengguna`) boleh ada **tanpa akun**: hasil impor Excel langsung bisa menjadi wali kelas,
+pengampu mapel, atau petugas piket. Akun login dibuat operator di **Presensi → Pegawai & kelas → Buat akun**:
+ID login = **NIP atau PegID**, sandi awal dari operator, dan pegawai **wajib membuat sandi sendiri** saat masuk pertama.
+Di Supabase akun itu tercatat dengan email buatan `<id>@pegawai.cikaracak.invalid` (domain `.invalid` tidak pernah
+menerima surat). Lupa sandi = operator menekan **Reset sandi**.
+
+| Jabatan | Melihat | Mengubah |
+|---|---|---|
+| Operator (`admin`) | semua | pegawai, akun, tugas, kelas, siswa, alat, kartu, jadwal, presensi |
+| Kepala sekolah (`kepsek`) | presensi & rekap semua kelas | — |
+| Guru | presensi kelas yang diajar | — |
+| Tenaga TU (`tu`) | — (menu keuangan & perpustakaan menyusul) | — |
+
+| Tugas (bisa lebih dari satu) | Tambahan hak |
 |---|---|
-| Admin | alat, kartu, jadwal, libur, semua presensi, ubah presensi, log tap, audit, undang guru |
-| Petugas piket (`pengguna.piket`) | lihat alat & semua presensi, mulai daftar kartu di alat |
-| Wali kelas (`rombel.wali_id`) | lihat & ubah presensi kelasnya |
-| Guru pengajar | lihat presensi kelas yang diajarnya |
-| Tanpa login (alat) | hanya `catat_tap` dan `lapor_alat` |
+| Wali kelas (`rombel.wali_id`) | lihat & isi Sakit/Izin/Alpa kelasnya |
+| Pengampu mapel (`mengajar`) | lihat presensi kelas yang diajar |
+| Piket (per hari) | **hanya pada harinya**: lihat semua kelas, daftarkan kartu |
+| Wakasek, Kesiswaan | lihat presensi semua kelas |
+| Bendahara, Keuangan, Perpustakaan, Kurikulum, Kepala lab | dicatat; dipakai modul berikutnya |
+
+Tanpa login (alat): hanya `catat_tap` dan `lapor_alat`. Pegawai yang dinonaktifkan langsung kehilangan akses.
+
+### Memperbarui proyek Supabase yang sudah berjalan
+
+Jalankan migrasi baru di SQL Editor (berurutan sesuai nama berkas). Migrasi `20261110000001_pegawai.sql`
+aman untuk data yang sudah ada: akun lama tetap tersambung, kuis/presensi tidak berubah, dan kolom `piket` lama
+menjadi tugas piket Senin–Jumat.
 
 ## Menyiapkan demo di Supabase (SMPN 2 Jalaksana, siswa fiktif)
 
@@ -58,8 +79,8 @@ Hasil lain untuk layar alat: `terdaftar`, `kartu_terpakai`, `tidak_dikenal`, `no
    pilih alat, tempel kunci alat, UID yang sama → *Tempelkan kartu*. Daftar hadir di tab **Hari ini** langsung terisi.
 8. Dengan alat sungguhan: tahan BOOT 3 detik, isi Project URL, kunci anon, ID alat, dan kunci alat.
 
-Guru lain: buat akunnya di Authentication → Users, lalu di aplikasi tab **Kelas & guru → Tambah guru**.
-Atur wali kelas di tabel kelas pada tab yang sama.
+Pegawai lain: tab **Pegawai & kelas** → *Tambah pegawai* → *Buat akun* (NIP/PegID + sandi awal) → *Tugas*.
+Atur wali kelas di tabel Kelas pada tab yang sama.
 
 ## Mencoba tanpa akun Supabase ("Supabase mini" di komputer)
 

@@ -13,8 +13,11 @@ end $$;
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-0000000000a5', 'piket@contoh.sch.id'),
   ('00000000-0000-0000-0000-0000000000a6', 'guru.baru@contoh.sch.id');
-insert into public.pengguna (id, sekolah_id, nama, peran, piket) values
-  ('00000000-0000-0000-0000-0000000000a5', '10000000-0000-0000-0000-000000000001', 'Petugas Piket', 'guru', true);
+insert into public.pengguna (id, sekolah_id, nama, peran) values
+  ('00000000-0000-0000-0000-0000000000a5', '10000000-0000-0000-0000-000000000001', 'Petugas Piket', 'guru');
+-- piket setiap hari agar uji tidak bergantung pada hari dijalankan (uji per hari ada di uji_pegawai.sql)
+insert into public.tugas (sekolah_id, pengguna_id, jenis, hari)
+  select '10000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-0000000000a5', 'piket', h from generate_series(1, 7) h;
 -- Guru B menjadi wali VIII-A (ia tidak mengajar di sana)
 update public.rombel set wali_id = '00000000-0000-0000-0000-0000000000a3' where id = '20000000-0000-0000-0000-000000000001';
 update public.siswa set panggilan = 'Adit' where rombel_id = '20000000-0000-0000-0000-000000000001' and no_absen = 1;
@@ -238,7 +241,8 @@ do $$ declare d date := current_setting('uji.hari')::date; begin
     if sqlerrm like 'GAGAL%' then raise; end if;
   end;
   begin
-    update public.pengguna set piket = true where id = auth.uid();
+    insert into public.tugas (sekolah_id, pengguna_id, jenis, hari)
+      values ('10000000-0000-0000-0000-000000000001', public.saya(), 'piket', 1);
     raise exception 'GAGAL: guru bisa menjadikan dirinya petugas piket';
   exception when insufficient_privilege then null;
   end;
@@ -294,13 +298,6 @@ set local request.jwt.claim.sub = '00000000-0000-0000-0000-0000000000a1';
 do $$ declare r jsonb; begin
   assert (select count(*) from public.audit where aksi = 'presensi_ubah') = 1, 'Perubahan presensi tercatat di audit';
   assert (select count(*) from public.tap) >= 12, 'Admin melihat log tap';
-  perform public.undang_pengguna('GURU.BARU@contoh.sch.id', 'Guru Baru');
-  assert exists (select 1 from public.pengguna where id = '00000000-0000-0000-0000-0000000000a6'), 'Admin mengundang guru lewat email';
-  begin
-    perform public.undang_pengguna('tidak.ada@contoh.sch.id', 'Siapa');
-    raise exception 'GAGAL: undangan ke email tanpa akun diterima';
-  exception when no_data_found then null;
-  end;
   begin
     update public.alat set sekolah_id = '10000000-0000-0000-0000-000000000002';
     raise exception 'GAGAL: admin bisa memindahkan alat ke sekolah lain';

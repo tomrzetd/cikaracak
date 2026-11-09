@@ -46,7 +46,9 @@ async function pesanGalat(r) {
 }
 
 function terjemah(m, status) {
-  if (/Invalid login credentials/i.test(m)) return 'Email atau kata sandi salah';
+  if (/Invalid login credentials/i.test(m)) return 'NIP/PegID atau kata sandi salah';
+  if (/should be different|same_password/i.test(m)) return 'Sandi baru harus berbeda dari sandi lama';
+  if (/Password should be at least|weak_password/i.test(m)) return 'Sandi terlalu lemah: minimal 8 karakter, campur huruf dan angka';
   if (/Email not confirmed/i.test(m)) return 'Email belum dikonfirmasi. Buka tautan konfirmasi di email, atau minta admin Supabase mengonfirmasi.';
   if (/JWT expired/i.test(m)) return 'Sesi berakhir, silakan masuk lagi';
   if (status === 404 && /function|Could not find/i.test(m)) return 'Fungsi presensi belum ada di server. Jalankan migrasi supabase/migrations terlebih dahulu.';
@@ -67,11 +69,23 @@ function simpanSesi(j) {
   tulis(K_SESI, sesi);
 }
 
-export async function masuk(email, sandi) {
-  const r = await ambil('/auth/v1/token?grant_type=password', { method: 'POST', headers: kepala(false), body: JSON.stringify({ email: email.trim(), password: sandi }) });
+// Pegawai masuk dengan NIP/PegID; akunnya di Supabase memakai email buatan <id>@pegawai.cikaracak.invalid
+// (lihat atur_akun di migrasi pegawai). Operator lama tetap bisa masuk dengan email.
+export const DOMAIN_PEGAWAI = 'pegawai.cikaracak.invalid';
+export const emailDariId = id => (id.includes('@') ? id.trim() : `${id.trim().toLowerCase()}@${DOMAIN_PEGAWAI}`);
+export const idDariEmail = e => (e || '').endsWith('@' + DOMAIN_PEGAWAI) ? e.split('@')[0] : e;
+
+export async function masuk(idAtauEmail, sandi) {
+  const r = await ambil('/auth/v1/token?grant_type=password', { method: 'POST', headers: kepala(false), body: JSON.stringify({ email: emailDariId(idAtauEmail), password: sandi }) });
   if (!r.ok) throw await pesanGalat(r);
   simpanSesi(await r.json());
   return sesi.pengguna;
+}
+
+export async function gantiSandi(baru) {
+  await pastikanSesi();
+  const r = await ambil('/auth/v1/user', { method: 'PUT', headers: kepala(), body: JSON.stringify({ password: baru }) });
+  if (!r.ok) throw await pesanGalat(r);
 }
 
 export async function keluar() {
