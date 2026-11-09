@@ -100,17 +100,18 @@ function tabSekolah(st, ctx) {
     <div class="card clay"><h3>Pegawai (${guru.filter(g => g.aktif).length})</h3>
     <p class="muted kecil">Jabatan tetap; mapel, wali kelas, dan piket adalah tugas. Pegawai tanpa akun tetap bisa menjadi wali kelas.
       Akun memakai ID login NIP/PegID dengan sandi awal dari operator; pegawai wajib menggantinya saat masuk pertama.</p>
-    <div class="tablebox"><table><tr><th class="l">Nama</th><th class="l">Jabatan</th><th class="l">Tugas</th><th class="l">Akun</th><th class="l"></th></tr>
-    ${guru.map(g => { const saya = g.id === st.profil.id; return `<tr${g.aktif ? '' : ' class="muted"'}><td class="l">${esc(g.nama)}</td>
-      <td class="l"><select data-jabatan="${esc(g.id)}" aria-label="Jabatan ${esc(g.nama)}"${saya ? ' disabled title="Jabatan sendiri tidak bisa diubah"' : ''}>${Object.entries(JABATAN).map(([k, l]) => `<option value="${k}"${k === g.peran ? ' selected' : ''}>${l}</option>`).join('')}</select></td>
-      <td class="l kecil">${esc(ringkasTugas(g.tugas).join(' · ') || '—')}</td>
-      <td class="l kecil">${g.akun_id ? (g.kode_login ? `<code>${esc(g.kode_login)}</code>` : 'akun email') : '<span class="muted">belum</span>'}</td>
-      <td class="l"><div class="row" style="gap:6px">
+    <label>Cari pegawai <input id="cariPegawai" data-sementara type="search" placeholder="ketik nama…" autocomplete="off"></label>
+    <div class="daftar-pegawai">
+    ${guru.map(g => { const saya = g.id === st.profil.id; const tg = ringkasTugas(g.tugas); return `<div class="pegawai${g.aktif ? '' : ' nonaktif'}" data-nama="${esc(g.nama.toLowerCase())}">
+      <div class="pegawai-kepala"><b>${esc(g.nama)}</b><span class="pill ${g.peran === 'admin' ? 'sky' : g.peran === 'kepsek' ? 'singkat' : g.peran === 'tu' ? 'ulang' : 'tuntas'}">${esc(JABATAN[g.peran] || g.peran)}</span>${g.aktif ? '' : '<span class="pill kosong">nonaktif</span>'}</div>
+      <div class="kecil">${tg.length ? esc(tg.join(' · ')) : '<span class="muted">Belum ada tugas tambahan</span>'}</div>
+      <div class="kecil">${g.akun_id ? (g.kode_login ? `Akun: <code>${esc(g.kode_login)}</code>` : 'Masuk dengan email') : '<span class="muted">Belum punya akun</span>'}</div>
+      <div class="row pegawai-aksi">
         <button class="btn kecil hijau" data-aksi="akun-pegawai" data-pegawai="${esc(g.id)}">${g.akun_id ? 'Reset sandi' : 'Buat akun'}</button>
-        <button class="btn kecil polos" data-aksi="tugas-pegawai" data-pegawai="${esc(g.id)}">Tugas</button>
+        <button class="btn kecil polos" data-aksi="tugas-pegawai" data-pegawai="${esc(g.id)}">Jabatan & tugas</button>
         ${saya ? '' : `<button class="btn kecil ${g.aktif ? 'bahaya' : 'polos'}" data-aksi="aktif-pegawai" data-pegawai="${esc(g.id)}" data-nilai="${g.aktif ? '0' : '1'}">${g.aktif ? 'Nonaktifkan' : 'Aktifkan'}</button>`}
-      </div></td></tr>`; }).join('')}
-    </table></div>
+      </div></div>`; }).join('')}
+    </div>
     <h3>Tambah pegawai</h3>
     <div class="row"><label>Nama lengkap <input id="pgNama" data-sementara maxlength="80" placeholder="mis. Siti Aminah, S.Pd."></label>
       <label>Jabatan <select id="pgJabatan">${Object.entries(JABATAN).map(([k, l]) => `<option value="${k}"${k === 'guru' ? ' selected' : ''}>${l}</option>`).join('')}</select></label></div>
@@ -183,7 +184,11 @@ function bukaTugas(ctx, st, id) {
   const g = (st.isi.guru || []).find(x => x.id === id);
   if (!g) return;
   const ada = (j, h = null) => (g.tugas || []).some(t => t.jenis === j && (t.hari ?? null) === h);
-  const isi = ctx.buka(`<h2>Tugas: ${esc(g.nama)}</h2>
+  const saya = g.id === st.profil.id;
+  const isi = ctx.buka(`<h2>${esc(g.nama)}</h2>
+    <label>Jabatan <select id="jabatanPegawai"${saya ? ' disabled' : ''}>${Object.entries(JABATAN).map(([k, l]) => `<option value="${k}"${k === g.peran ? ' selected' : ''}>${l}</option>`).join('')}</select></label>
+    ${saya ? '<p class="muted kecil">Jabatan sendiri tidak bisa diubah.</p>' : ''}
+    <h3>Tugas</h3>
     <p class="muted kecil">Piket berlaku hanya pada hari yang dicentang: melihat semua kelas dan mendaftarkan kartu.</p>
     <div class="row">${[1, 2, 3, 4, 5, 6].map(h => `<label class="cek"><input type="checkbox" data-piket="${h}"${ada('piket', h) ? ' checked' : ''}> Piket ${HARI_PENDEK[h]}</label>`).join('')}</div>
     <div class="row">${Object.entries(TUGAS).filter(([k]) => k !== 'piket').map(([k, l]) => `<label class="cek"><input type="checkbox" data-tugas="${k}"${ada(k) ? ' checked' : ''}> ${l}</label>`).join('')}</div>
@@ -193,9 +198,11 @@ function bukaTugas(ctx, st, id) {
     try {
       const baris = [...isi.querySelectorAll('[data-piket]:checked')].map(x => ({ sekolah_id: st.profil.sekolah_id, pengguna_id: id, jenis: 'piket', hari: Number(x.dataset.piket) }))
         .concat([...isi.querySelectorAll('[data-tugas]:checked')].map(x => ({ sekolah_id: st.profil.sekolah_id, pengguna_id: id, jenis: x.dataset.tugas, hari: null })));
+      const jab = isi.querySelector('#jabatanPegawai').value;
+      if (!saya && jab !== g.peran) await srv.ubah('pengguna', { id: 'eq.' + id }, { peran: jab });
       await srv.hapus('tugas', { pengguna_id: 'eq.' + id });
       if (baris.length) await srv.tambah('tugas', baris);
-      ctx.tutup(); toast('Tugas disimpan'); muatTab(ctx, { diam: true });
+      ctx.tutup(); toast('Jabatan & tugas disimpan'); muatTab(ctx, { diam: true });
     } catch (e) { toast(e.message); }
   };
 }

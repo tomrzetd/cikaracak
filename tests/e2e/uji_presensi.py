@@ -89,6 +89,7 @@ def tab(page, nama):
 def jalan(page):
     tgl = hari_kerja_lalu()
     sambung(page)
+    expect(page.locator('#namaGuru')).to_have_text('Belum masuk')
 
     # kata sandi salah
     page.fill('#masukEmail', 'operator@contoh.sch.id')
@@ -96,6 +97,8 @@ def jalan(page):
     page.click('#formMasuk button[type=submit]')
     expect(page.locator('#v-presensi')).to_contain_text('kata sandi salah')
     masuk(page, 'operator@contoh.sch.id')
+    expect(page.locator('#namaGuru')).to_have_text('Operator Sekolah')
+    expect(page.locator('#subGuru')).to_contain_text('Operator')
     expect(page.locator('#v-presensi table tr')).to_have_count(11)   # VII-A: 10 siswa + kepala
     page.screenshot(path=SHOT / 'presensi-1-hari-ini.png', full_page=True)
 
@@ -189,25 +192,31 @@ def jalan(page):
     page.fill('#pgNama', 'Bu Uji Pegawai, S.Pd.')
     page.click('[data-aksi=tambah-pegawai]')
     expect(page.locator('#toast')).to_contain_text('Pegawai ditambahkan')
-    pg = page.locator('#v-presensi tr:has([data-aksi=akun-pegawai])', has_text='Bu Uji Pegawai')
-    expect(pg).to_contain_text('belum')
+    pg = page.locator('#v-presensi .pegawai', has_text='Bu Uji Pegawai')
+    expect(pg).to_contain_text('Belum punya akun')
     idp = pg.locator('[data-aksi=akun-pegawai]').get_attribute('data-pegawai')
     page.locator('#v-presensi tr:has(select[data-wali])', has_text='IX-A').locator('select[data-wali]').select_option(value=idp)
     expect(page.locator('#toast')).to_contain_text('Wali kelas disimpan')
     expect(page.locator('#v-presensi')).not_to_contain_text('Memuat…')
-    page.locator('#v-presensi tr:has([data-aksi=akun-pegawai])', has_text='Bu Uji Pegawai').locator('[data-aksi=akun-pegawai]').click()
+    page.locator('#v-presensi .pegawai', has_text='Bu Uji Pegawai').locator('[data-aksi=akun-pegawai]').click()
     page.fill('#akunKode', '198001012005012001')
     page.click('#simpanAkun')
     expect(page.locator('#hasilSandi')).to_be_visible()
     sandi_awal = page.locator('#hasilSandi').inner_text().strip()
     page.screenshot(path=SHOT / 'presensi-6-akun-pegawai.png')
     page.click('#lapis [data-tutup]')
-    expect(page.locator('#v-presensi tr:has([data-aksi=akun-pegawai])', has_text='Bu Uji Pegawai')).to_contain_text('198001012005012001')
+    expect(page.locator('#v-presensi .pegawai', has_text='Bu Uji Pegawai')).to_contain_text('198001012005012001')
     page.click('[data-aksi=keluar]')
     page.fill('#masukEmail', '198001012005012001')
     page.fill('#masukSandi', sandi_awal)
     page.click('#formMasuk button[type=submit]')
     expect(page.locator('#formSandi')).to_be_visible()
+    # regresi: pembaruan otomatis 10 detik tidak boleh mengambil fokus / mengosongkan kolom sandi
+    page.click('#sandiBaru')
+    page.keyboard.type('SandiSaya')
+    page.wait_for_timeout(11500)
+    assert page.evaluate("document.activeElement && document.activeElement.id") == 'sandiBaru', 'kolom sandi kehilangan fokus'
+    expect(page.locator('#sandiBaru')).to_have_value('SandiSaya')
     page.fill('#sandiBaru', 'SandiSaya2026')
     page.fill('#sandiUlang', 'SandiBeda2026')
     page.click('#formSandi button[type=submit]')

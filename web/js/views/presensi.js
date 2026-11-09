@@ -282,7 +282,18 @@ export function pasang(el, ctx) {
       } else await admin.aksi(a, b, st, ctx);
     } catch (err) { toast(err.message); }
   });
+  // Segarkan daftar hadir tiap 10 detik, tetapi JANGAN saat pengguna sedang mengetik atau di layar sandi:
+  // menggambar ulang di tengah ketikan membuat kolom kehilangan fokus dan keyboard HP tertutup.
+  const mengetik = () => el.contains(document.activeElement) && /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
   setInterval(() => {
-    if (!el.hidden && st.tab === 'hari' && st.profil && st.rombelId && st.tanggal === tglZona() && !st.memuat && document.visibilityState === 'visible') muatTab(ctx, { diam: true });
+    if (!el.hidden && st.tab === 'hari' && st.profil && !st.profil.wajib_ganti_sandi && st.rombelId && st.tanggal === tglZona()
+        && !st.memuat && !mengetik() && !document.querySelector('#lapis:not([hidden])') && document.visibilityState === 'visible') muatTab(ctx, { diam: true });
   }, 10000);
+  // Sesi tersimpan: muat profil di awal agar nama & jabatan langsung tampil di kepala aplikasi.
+  if (srv.terhubung() && srv.masukSebagai()) muatTab(ctx, { diam: true });
+  el.addEventListener('input', e => {   // saring daftar pegawai tanpa menggambar ulang halaman
+    if (e.target.id !== 'cariPegawai') return;
+    const q = e.target.value.trim().toLowerCase();
+    el.querySelectorAll('.pegawai').forEach(x => { x.hidden = !!q && !x.dataset.nama.includes(q); });
+  });
 }

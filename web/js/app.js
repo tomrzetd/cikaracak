@@ -56,8 +56,12 @@ function renderKonteks() {
     : '<option value="">Belum ada kuis</option>';
   if (!d.aktif.kuisId && ks.length) store.pilih(d.aktif.rombelId, ks[0].id);
   $('#pillContoh').hidden = !d.contoh || aktif === 'presensi';   // data contoh di perangkat tidak berlaku untuk presensi server
-  $('#namaGuru').textContent = d.guru.nama || 'Guru';
-  $('#avatarGuru').textContent = inisial((d.guru.nama || 'Guru').replace(/^(bu|pak|ibu|bapak)\s+/i, ''));
+  // Nama di kepala aplikasi: akun server yang sedang masuk; bila tidak, nama guru di perangkat ini.
+  const p = presensi.st.profil;
+  const nama = p?.nama || (!d.contoh && d.guru.nama) || 'Belum masuk';
+  $('#namaGuru').textContent = nama;
+  $('#subGuru').textContent = p ? [presensi.JABATAN[p.peran] || p.peran, p.sekolah?.nama].filter(Boolean).join(' · ') : 'Laun-laun jadi legok';
+  $('#avatarGuru').textContent = nama === 'Belum masuk' ? '?' : inisial(nama.replace(/,.*$/, '').replace(/^((bu|pak|ibu|bapak|h|hj|dr|drs|ir)\.?\s+)+/i, ''));
 }
 $('#pilihRombel').onchange = e => { const ks = store.kuisRombel(e.target.value); store.pilih(e.target.value, ks[0]?.id || null); };
 $('#pilihKuis').onchange = e => store.pilih(store.data.aktif.rombelId, e.target.value || null);
@@ -90,8 +94,8 @@ function render() {
       VIEWS[aktif].render(el, ctx);
       for (const [id, nilai, fokus, pos] of sementara) {
         const x = el.querySelector('#' + id);
-        if (!x || !nilai) continue;
-        x.value = nilai;
+        if (!x) continue;
+        if (nilai) x.value = nilai;
         if (fokus) { x.focus(); try { x.setSelectionRange(pos, pos); } catch { /* bukan input teks */ } }
       }
     }
