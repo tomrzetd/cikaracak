@@ -837,16 +837,15 @@ void setup() {
   terapkanDayaWifi();
   bacaSsidTersimpan();
   Serial.printf("# WiFi tersimpan: %s\n", ssidTersimpan[0] ? ssidTersimpan : "(belum ada)");
-  {
+  wifiDipakai = wmPortal.getWiFiIsSaved();
+  if (!wifiDipakai) {
+    bukaPortal(); // portal non-blocking; hanya satu instans WiFiManager yang aktif
+  } else {
     WiFiManager wm;
-    wifiDipakai = wm.getWiFiIsSaved();
-    if (!wifiDipakai) bukaPortal();   // pertama kali: atur WiFi (ditutup tanpa simpan = lanjut mode demo)
-    else {
-      layarInfo("CIKARACAK HADIR", "Menyambung WiFi...", "", "", "Tahan BOOT 3 detik untuk pengaturan.");
-      wm.setEnableConfigPortal(false);
-      wm.setConnectTimeout(15);
-      wm.autoConnect();
-    }
+    layarInfo("CIKARACAK HADIR", "Menyambung WiFi...", "", "", "Tahan BOOT 3 detik untuk pengaturan.");
+    wm.setEnableConfigPortal(false);
+    wm.setConnectTimeout(15);
+    wm.autoConnect();
   }
   if (wifiDipakai) {
     // Hemat daya modem: radio hanya bangun saat perlu, sehingga tidak mengganggu WiFi HP di dekatnya.
