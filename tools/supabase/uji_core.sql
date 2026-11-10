@@ -6,7 +6,16 @@
 -- Data uji saja (dibuat setelah seluruh uji presensi/pegawai/dasbor).
 insert into auth.users (id, email) values
  ('00000000-0000-0000-0000-0000000000b1', 'wali1@contoh.test'),
- ('00000000-0000-0000-0000-0000000000b2', 'wali2@contoh.test');
+ ('00000000-0000-0000-0000-0000000000b2', 'wali2@contoh.test'),
+ ('00000000-0000-0000-0000-0000000000a5', 'guru-b-tanpa-wali@contoh.test');
+-- Guru tambahan hanya mengajar VIII-B, tidak berstatus wali kelas VIII-A.
+insert into public.pengguna (id, sekolah_id, nama, peran)
+ values ('00000000-0000-0000-0000-0000000000a5',
+         '10000000-0000-0000-0000-000000000001','Guru B Tanpa Penugasan Wali','guru');
+insert into public.mengajar (guru_id, rombel_id, sekolah_id, mapel)
+ values ('00000000-0000-0000-0000-0000000000a5',
+         '20000000-0000-0000-0000-000000000002',
+         '10000000-0000-0000-0000-000000000001','Matematika');
 
 insert into public.siswa (id, sekolah_id, rombel_id, no_absen, nama)
 values ('40000000-0000-0000-0000-000000000099',
@@ -114,13 +123,24 @@ do $$ begin
  assert (select count(*) from public.hubungan_siswa_wali) = 0, 'Guru A tidak membuka relasi wali';
 end $$;
 rollback;
+-- Guru a3 sebenarnya wali VIII-A (ditetapkan uji_presensi.sql): akses sah karena tugas wali.
 begin;
 set local role authenticated;
 set local request.jwt.claim.sub = '00000000-0000-0000-0000-0000000000a3';
-do $$ begin
- assert (select count(*) from public.foto_siswa) = 0, 'Guru B tidak melihat foto guru A';
+do $ begin
+ assert (select count(*) from public.foto_siswa) = 1, 'Wali kelas VIII-A dapat melihat foto kelas binaan';
+ assert (select count(*) from public.persetujuan_foto) = 2, 'Wali VIII-A + guru VIII-B melihat izin kedua kelas';
+end $;
+rollback;
+
+-- Guru a5 hanya mengajar VIII-B dan TIDAK punya tugas wali VIII-A.
+begin;
+set local role authenticated;
+set local request.jwt.claim.sub = '00000000-0000-0000-0000-0000000000a5';
+do $ begin
+ assert (select count(*) from public.foto_siswa) = 0, 'Guru tanpa penugasan kelas A tidak melihat foto kelas A';
  assert (select count(*) from public.persetujuan_foto) = 1, 'Guru B hanya melihat izin kelas B';
-end $$;
+end $;
 rollback;
 
 -- Setelah persetujuan dicabut, foto lama tetap di tabel tetapi tidak dapat dibaca guru.
