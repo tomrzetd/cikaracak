@@ -54,6 +54,20 @@ def jalan(page, nama):
     page.goto(URL)
     expect(page.locator('#pillContoh')).to_be_visible()
     expect(page.locator('#v-beranda .stat')).to_have_count(4)
+    expect(page.locator('#v-beranda .modul-card')).to_have_count(4)
+    expect(page.locator('#statusAkses')).to_contain_text('Data lokal')
+    # Dashboard baru harus memisahkan fitur nyata dari roadmap yang belum dapat digunakan.
+    page.click('.nav[data-v=layanan]')
+    expect(page.locator('#v-layanan .modul-card')).to_have_count(6)
+    expect(page.locator('#v-layanan [data-modul=asesmen] .modul-buka')).to_be_visible()
+    expect(page.locator('#v-layanan [data-modul=hadir] .modul-buka')).to_be_visible()
+    expect(page.locator('#v-layanan [data-modul=keuangan] .modul-belum')).to_be_visible()
+    expect(page.locator('#v-layanan [data-modul=keluarga] .modul-belum')).to_be_visible()
+    assert page.locator('#v-layanan [data-modul=keuangan] [data-go]').count() == 0
+    page.screenshot(path=SHOT / f'{nama}-0-layanan.png', full_page=True)
+    page.click('#v-layanan [data-modul=asesmen] [data-go=kuis]')
+    expect(page.locator('#v-kuis')).to_be_visible()
+    page.click('.nav[data-v=beranda]')
     page.screenshot(path=SHOT / f'{nama}-1-beranda.png', full_page=True)
 
     # Saran dari data contoh

@@ -1,6 +1,6 @@
 // Service worker: menyimpan seluruh aplikasi di perangkat agar tetap berjalan tanpa internet.
 // Naikkan VERSI setiap kali ada file yang berubah; tools/cek-web.js memeriksa daftar ini lengkap.
-const VERSI = 'cikaracak-0.4.0';
+const VERSI = 'cikaracak-0.5.0';
 const FILE = [
   './',
   'index.html',
@@ -35,6 +35,7 @@ const FILE = [
   'js/views/presensi.js',
   'js/views/presensi-admin.js',
   'js/views/presensi-demo.js',
+  'js/views/layanan.js',
   'js/views/pengaturan.js',
 ];
 
@@ -48,8 +49,13 @@ self.addEventListener('activate', e => {
     .then(() => self.clients.claim()));
 });
 
-// Utamakan salinan di perangkat; bila tidak ada, ambil dari jaringan.
+// Dokumen HTML memakai network-first agar rilis Pages baru tidak selalu terkunci
+// pada index.html lama. Aset aplikasi tetap cache-first untuk fungsi offline.
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET' || new URL(e.request.url).origin !== location.origin) return;
+  if (e.request.mode === 'navigate') {
+    e.respondWith(fetch(e.request).catch(() => caches.match('index.html')));
+    return;
+  }
   e.respondWith(caches.match(e.request, { ignoreSearch: true }).then(hit => hit || fetch(e.request)));
 });

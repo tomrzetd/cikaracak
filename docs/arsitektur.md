@@ -51,3 +51,20 @@ Nomor absen = urutan siswa aktif di rombel (1, 2, 3, …). LJK per siswa menceta
 ## Mengapa tanpa framework
 
 Sasaran kontributor termasuk guru yang baru belajar koding. Tanpa build, mereka cukup membuka file di editor, mengubah, lalu memuat ulang browser. Aplikasi juga harus ringan di HP murah dan berjalan offline.
+
+## Navigasi modular v0.5 (UI, bukan autentikasi baru)
+
+- `Beranda` menampilkan modul Cikaracak di atas statistik asesmen yang sudah ada.
+- `Layanan Sekolah` menjelaskan status implementasi: Asesmen (offline) dan Presensi
+  (server sekolah) dapat dibuka; Pustaka, Keuangan, Keluarga dan Kantin merupakan roadmap
+  tanpa tombol transaksi atau login semu.
+- `presensi.st.profil` hanya dipakai untuk memberi informasi status akun yang sudah
+  terautentikasi. Kewenangan asli tetap di Supabase RLS. Menyembunyikan tombol **bukan**
+  pengganti pemeriksaan hak akses.
+- Navigasi tetap memakai `data-v`, `data-go`, URL `#hash`, dengan `VIEWS` di
+  `web/js/app.js`. Kelas dan kuis lokal tidak ditampilkan sebagai konteks pada
+  halaman Presensi/Layanan.
+- `web/sw.js` mencache modul baru sebagai bagian dari offline-first; cache berversi
+  `cikaracak-0.5.0`. UI 0.5 **belum** mengaktifkan Core A1, bucket foto, atau akses keluarga.
+- Pipeline Pages di `main` masih checkout commit web lama secara tetap. Perlu PR rilis
+  terpisah setelah CI browser, Supabase, firmware dan Android hijau.

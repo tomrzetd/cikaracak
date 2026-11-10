@@ -1,7 +1,7 @@
 {
   "name": "Cikaracak — Laun-laun jadi legok",
   "short_name": "Cikaracak",
-  "description": "Kuis formatif, pindai lembar jawaban, dan saran tindak lanjut untuk guru. Bekerja offline.",
+  "description": "Asesmen formatif offline, pindai LJK, presensi RFID, dan pengembangan layanan sekolah modular.",
   "lang": "id",
   "start_url": "./index.html",
   "scope": "./",
