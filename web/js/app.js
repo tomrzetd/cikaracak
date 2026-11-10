@@ -10,10 +10,11 @@ import * as saran from './views/saran.js';
 import * as riwayat from './views/riwayat.js';
 import * as presensi from './views/presensi.js';
 import * as layanan from './views/layanan.js';
+import * as pustaka from './views/pustaka.js';
 import * as pengaturan from './views/pengaturan.js';
 
-const VIEWS = { beranda, kelas, kuis, saran, riwayat, presensi, layanan, pengaturan };
-const JUDUL = { beranda: 'Beranda', kelas: 'Kelas & Siswa', kuis: 'Asesmen', saran: 'Saran', riwayat: 'Riwayat & Uji', presensi: 'Presensi', layanan: 'Layanan Sekolah', pengaturan: 'Pengaturan' };
+const VIEWS = { beranda, kelas, kuis, saran, riwayat, presensi, pustaka, layanan, pengaturan };
+const JUDUL = { beranda: 'Beranda', kelas: 'Kelas & Siswa', kuis: 'Asesmen', saran: 'Saran', riwayat: 'Riwayat & Uji', presensi: 'Presensi', pustaka: 'Perpustakaan Demo', layanan: 'Layanan Sekolah', pengaturan: 'Pengaturan' };
 
 const store = buatStore(penyimpananIDB);
 let aktif = 'beranda';
@@ -56,7 +57,7 @@ function renderKonteks() {
     ? ks.map(k => `<option value="${esc(k.id)}"${k.id === d.aktif.kuisId ? ' selected' : ''}>${esc(k.tanggal)} · ${esc(k.topik)}</option>`).join('')
     : '<option value="">Belum ada kuis</option>';
   if (!d.aktif.kuisId && ks.length) store.pilih(d.aktif.rombelId, ks[0].id);
-  $('#pillContoh').hidden = !d.contoh || aktif === 'presensi' || aktif === 'layanan';   // data contoh di perangkat tidak berlaku untuk presensi server
+  $('#pillContoh').hidden = !d.contoh || aktif === 'presensi' || aktif === 'layanan' || aktif === 'pustaka';   // data contoh di perangkat tidak berlaku untuk presensi server
   // Nama di kepala aplikasi: akun server yang sedang masuk; bila tidak, nama guru di perangkat ini.
   const p = presensi.st.profil;
   const nama = p?.nama || (!d.contoh && d.guru.nama) || 'Belum masuk';
@@ -77,7 +78,7 @@ function go(v) {
   $$('.nav').forEach(b => (b.dataset.v === v ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current')));
   Object.keys(VIEWS).forEach(k => { $('#v-' + k).hidden = k !== v; });
   $('#judulView').textContent = JUDUL[v];
-  $('.konteks').hidden = v === 'presensi' || v === 'layanan';   // kelas & kuis di perangkat tidak berlaku untuk presensi server
+  $('.konteks').hidden = v === 'presensi' || v === 'layanan' || v === 'pustaka';   // kelas & kuis di perangkat tidak berlaku untuk presensi server
   if (location.hash.slice(1) !== v) history.replaceState(null, '', '#' + v);
   render();
   window.scrollTo(0, 0);
