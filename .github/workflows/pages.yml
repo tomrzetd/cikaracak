@@ -1,5 +1,5 @@
 # Publikasi demo web Cikaracak tanpa menggabungkan firmware/Android dari PR pengembangan.
-# Snapshot rilis: hadir-uji-kartu commit fd5828f (web v0.4.0).
+# Snapshot rilis: dashboard modular web v0.5.0 yang lulus uji browser.
 # Jika ingin versi web lebih baru, tinjau dan perbarui ref ini melalui PR terpisah.
 name: Pages - Demo Web Cikaracak
 
@@ -30,7 +30,7 @@ jobs:
       - name: Ambil snapshot web yang telah diuji
         uses: actions/checkout@v4
         with:
-          ref: fd5828f8131e06fdb3aab7a355413e53ae1d392c
+          ref: 6af775bda9c35017cc6515ae743318178ee60400
           persist-credentials: false
 
       - name: Periksa struktur web dan berkas offline
