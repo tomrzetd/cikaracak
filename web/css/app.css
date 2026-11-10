@@ -239,3 +239,59 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .
 .layar-langsung:fullscreen .tap-besar h2 { font-size: 3.4rem; }
 .layar-langsung:fullscreen .sim-wajah { font-size: 8rem; }
 .layar-langsung:fullscreen .tap-besar p { font-size: 1.5rem; }
+
+
+/* ---------- Dashboard modular Cikaracak v0.5 ---------- */
+.brand-cikaracak { display: flex; gap: 12px; align-items: center; padding: 3px 7px 15px; border-bottom: 1px solid var(--line); }
+.brand-tetes { display: grid; place-items: center; width: 43px; height: 43px; flex: none; border-radius: 16px; background: var(--surface); color: var(--mint-ink); font-size: 1.75rem; box-shadow: inset 2px 2px 3px var(--in-hi), 3px 5px 9px var(--sh-out); }
+.brand-cikaracak strong { display: block; font-weight: 900; font-size: 1.03rem; letter-spacing: .09em; }
+.brand-cikaracak small { display: block; font-size: .67rem; color: var(--muted); font-weight: 650; line-height: 1.4; }
+.akses-aktif { margin: 0 6px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 99px; text-align: center; font-size: .71rem; font-weight: 800; color: var(--muted); background: var(--surface); }
+.menu-kategori { display: block; padding: 12px 12px 3px; letter-spacing: .13em; color: var(--muted); font-weight: 900; font-size: .64rem; }
+.menu-kategori:first-child { padding-top: 2px; }
+.modul-beranda { display: flex; flex-direction: column; gap: 15px; min-width: 0; }
+.modul-judul { display: flex; align-items: end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.modul-judul > div { display: grid; gap: 6px; min-width: 0; }
+.modul-judul h2 { font-size: clamp(1.18rem, 2.2vw, 1.48rem); }
+.modul-judul p { max-width: 65ch; }
+.modul-eyebrow { color: var(--mint-ink); font-size: .72rem; letter-spacing: .12em; font-weight: 900; }
+.modul-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.modul-grid.modul-ringkas { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.modul-card { display: flex; flex-direction: column; gap: 9px; min-width: 0; padding: 21px; border: 1px solid var(--line); border-radius: 23px; background: var(--surface);
+  box-shadow: 4px 6px 15px var(--sh-out), inset 1px 1px 2px var(--in-hi); }
+.modul-card h3 { font-size: 1.03rem; line-height: 1.25; }
+.modul-card p { color: var(--muted); font-size: .85rem; line-height: 1.55; overflow-wrap: anywhere; }
+.modul-card p.modul-catatan { font-size: .76rem; margin-top: auto; }
+.modul-atas { display: flex; align-items: start; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.modul-ikon { display: grid; place-items: center; width: 44px; height: 44px; flex: none; border-radius: 15px; font-size: 1.45rem; line-height: 1; font-weight: 900; background: var(--modul-bg, var(--sky)); color: var(--modul-ink, var(--sky-ink)); }
+.modul-mint { --modul-bg: var(--mint); --modul-ink: var(--mint-ink); }
+.modul-peach { --modul-bg: var(--peach); --modul-ink: var(--peach-ink); }
+.modul-butter { --modul-bg: var(--butter); --modul-ink: var(--butter-ink); }
+.modul-sky { --modul-bg: var(--sky); --modul-ink: var(--sky-ink); }
+.modul-lilac { --modul-bg: var(--lilac); --modul-ink: var(--lilac-ink); }
+.modul-status { display: inline-flex; align-items: center; gap: 5px; max-width: 100%; padding: 5px 9px; border-radius: 99px; font-weight: 900; font-size: .68rem; line-height: 1.4; }
+.modul-status.siap { color: var(--ok); background: var(--mint); }
+.modul-status.perlu { color: var(--warn); background: var(--butter); }
+.modul-status.rencana { color: var(--muted); background: var(--bg); }
+.modul-status::before { content: ''; width: 6px; height: 6px; flex: none; border-radius: 50%; background: currentColor; }
+.modul-buka { margin-top: auto; align-self: flex-start; background: var(--modul-bg, var(--mint)); color: var(--modul-ink, var(--ink)); }
+.modul-belum { margin-top: auto; font-size: .73rem; color: var(--muted); font-weight: 750; }
+.modul-ringkas .modul-card { min-height: 188px; }
+.modul-ringkas .modul-card .modul-buka { margin-top: auto; }
+.modul-hero { background: linear-gradient(125deg, var(--mint) 0%, var(--surface) 70%, var(--sky) 100%); }
+.modul-hero .copy { max-width: 810px; }
+.modul-konteks { gap: 6px; padding: 20px 22px; }
+@media (max-width: 1200px) {
+  .modul-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 900px) {
+  .menu-kategori { display: none; }
+  nav.menu .nav { flex: none; }
+  .brand-cikaracak { padding-bottom: 8px; }
+  .akses-aktif { align-self: flex-start; }
+}
+@media (max-width: 630px) {
+  .modul-grid, .modul-grid.modul-ringkas { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .modul-card { min-height: 0; padding: 18px; }
+  .modul-judul .btn { align-self: flex-start; }
+}
