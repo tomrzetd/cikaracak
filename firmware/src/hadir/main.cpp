@@ -544,8 +544,7 @@ static bool terapkanDnsManual() {
   if (!netif) { Serial.println("[dns] antarmuka WiFi STA belum tersedia"); return false; }
   esp_netif_dns_info_t info{};
   info.ip.type = ESP_IPADDR_TYPE_V4;
-  const uint8_t *ip = dnsManual.raw_address();
-  IP4_ADDR(&info.ip.u_addr.ip4, ip[0], ip[1], ip[2], ip[3]);
+  IP4_ADDR(&info.ip.u_addr.ip4, dnsManual[0], dnsManual[1], dnsManual[2], dnsManual[3]);
   esp_err_t err = esp_netif_set_dns_info(netif, ESP_NETIF_DNS_MAIN, &info);
   if (err != ESP_OK) {
     Serial.printf("[dns] gagal menerapkan override, esp_err=0x%x\n", (unsigned)err);
