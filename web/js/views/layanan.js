@@ -47,6 +47,7 @@ function kartu(m, profil, ringkas = false) {
     ${m.tujuan
       ? `<button type="button" class="btn kecil modul-buka" data-go="${m.tujuan}">Buka ${m.id === 'asesmen' ? 'Asesmen' : m.id === 'pustaka' ? 'Demo Pustaka' : 'Presensi'} <span aria-hidden="true">→</span></button>`
       : `<span class="modul-belum" aria-label="Modul belum tersedia">Belum tersedia untuk transaksi</span>`}
+    ${m.id === 'hadir' ? '<button type="button" class="btn kecil polos" data-go="dasborPublik">Pratinjau dasbor sekolah →</button>' : ''}
   </article>`;
 }
 
