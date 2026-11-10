@@ -1,0 +1,52 @@
+# Publikasi demo web Cikaracak tanpa menggabungkan firmware/Android dari PR pengembangan.
+# Snapshot rilis: hadir-uji-kartu commit fd5828f (web v0.4.0).
+# Jika ingin versi web lebih baru, tinjau dan perbarui ref ini melalui PR terpisah.
+name: Pages - Demo Web Cikaracak
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/pages.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-demo-cikaracak
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Terbitkan web demo
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: Ambil snapshot web yang telah diuji
+        uses: actions/checkout@v4
+        with:
+          ref: fd5828f8131e06fdb3aab7a355413e53ae1d392c
+          persist-credentials: false
+
+      - name: Periksa struktur web dan berkas offline
+        run: |
+          node --version
+          node tools/cek-web.js
+          node --test tests/*.test.js
+
+      - name: Persiapkan GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Paketkan folder web saja
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: web
+
+      - name: Terbitkan ke GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v4
