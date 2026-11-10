@@ -101,7 +101,7 @@ export function renderDasbor(st) {
   const d = st.isi.dasbor;
   const kontrol = `<div class="row">
     <label>Rentang <select id="dbHari">${[7, 14, 30].map(h => `<option value="${h}"${h === st.db?.hari ? ' selected' : ''}>${h} hari terakhir</option>`).join('')}</select></label>
-    <label>Data <select id="dbSumber"><option value="0"${(!st.db?.lokal && !st.db?.demo) ? ' selected' : ''}>Sekolah (server)</option><option value="1"${(!st.db?.lokal && st.db?.demo) ? ' selected' : ''}>Kelas demo (server)</option><option value="2"${st.db?.lokal ? ' selected' : ''}>Pratinjau lokal (fiktif)</option></select></label></div>`;
+    ${st.db?.publik ? '<span class="pill peach">Data fiktif, hanya pratinjau</span>' : `<label>Data <select id="dbSumber"><option value="0"${(!st.db?.lokal && !st.db?.demo) ? ' selected' : ''}>Sekolah (server)</option><option value="1"${(!st.db?.lokal && st.db?.demo) ? ' selected' : ''}>Kelas demo (server)</option><option value="2"${st.db?.lokal ? ' selected' : ''}>Pratinjau lokal (fiktif)</option></select></label>`}</div>`;
   if (!d) return `<div class="card clay">${kontrol}<p class="muted">Memuat…</p></div>`;
   const total = (d.harian || []).reduce((a, x) => ({ h: a.h + x.hadir + x.terlambat, n: a.n + x.hadir + x.terlambat + x.izin_sakit + x.tidak_tercatat, t: a.t + x.terlambat }), { h: 0, n: 0, t: 0 });
   const acuan = (d.harian || []).find(x => x.tanggal === d.acuan) || { hadir: 0, terlambat: 0, izin_sakit: 0, tidak_tercatat: 0 };
