@@ -127,20 +127,20 @@ rollback;
 begin;
 set local role authenticated;
 set local request.jwt.claim.sub = '00000000-0000-0000-0000-0000000000a3';
-do $ begin
+do $$ begin
  assert (select count(*) from public.foto_siswa) = 1, 'Wali kelas VIII-A dapat melihat foto kelas binaan';
  assert (select count(*) from public.persetujuan_foto) = 2, 'Wali VIII-A + guru VIII-B melihat izin kedua kelas';
-end $;
+end $$;
 rollback;
 
 -- Guru a5 hanya mengajar VIII-B dan TIDAK punya tugas wali VIII-A.
 begin;
 set local role authenticated;
 set local request.jwt.claim.sub = '00000000-0000-0000-0000-0000000000c7';
-do $ begin
+do $$ begin
  assert (select count(*) from public.foto_siswa) = 0, 'Guru tanpa penugasan kelas A tidak melihat foto kelas A';
  assert (select count(*) from public.persetujuan_foto) = 1, 'Guru B hanya melihat izin kelas B';
-end $;
+end $$;
 rollback;
 
 -- Setelah persetujuan dicabut, foto lama tetap di tabel tetapi tidak dapat dibaca guru.
