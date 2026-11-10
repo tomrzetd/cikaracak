@@ -177,13 +177,24 @@ jobs:
               0xe000 $P/framework-arduinoespressif32/tools/partitions/boot_app0.bin 0x10000 $B/firmware.bin
             cp $B/firmware.bin cikaracak-$NAMA-pembaruan-0x10000.bin   # pembaruan: pengaturan alat tidak terhapus
           done
-      - name: Pratinjau animasi wajah Ciki
+      # Artefak firmware disimpan SEBELUM render GIF agar firmware segera bisa diunduh.
+      # Proses pratinjau bukan prasyarat flash ke perangkat.
+      - name: Upload firmware hasil build
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-esp32
+          path: cikaracak-*-esp32*.bin
+          if-no-files-found: error
+      - name: Pratinjau animasi wajah Ciki (opsional, dibatasi)
+        timeout-minutes: 3
+        continue-on-error: true
         run: |
           sudo apt-get install -y -qq ffmpeg >/dev/null
           bash tools/firmware/pratinjau/buat.sh "firmware/.pio/libdeps/hadir/Adafruit GFX Library" ciki.gif
-      - uses: actions/upload-artifact@v4
+      - name: Upload GIF Ciki (jika tersedia)
+        if: ${{ hashFiles('ciki.gif') != '' }}
+        uses: actions/upload-artifact@v4
         with:
-          name: firmware-esp32
-          path: |
-            cikaracak-*-esp32*.bin
-            ciki.gif
+          name: ciki-pratinjau
+          path: ciki.gif
+          if-no-files-found: ignore
