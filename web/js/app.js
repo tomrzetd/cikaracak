@@ -13,7 +13,7 @@ import * as layanan from './views/layanan.js';
 import * as pengaturan from './views/pengaturan.js';
 
 const VIEWS = { beranda, kelas, kuis, saran, riwayat, presensi, layanan, pengaturan };
-const JUDUL = { beranda: 'Beranda', kelas: 'Kelas & Siswa', kuis: 'Kuis', saran: 'Saran', riwayat: 'Riwayat & Uji', presensi: 'Presensi', layanan: 'Layanan Sekolah', pengaturan: 'Pengaturan' };
+const JUDUL = { beranda: 'Beranda', kelas: 'Kelas & Siswa', kuis: 'Asesmen', saran: 'Saran', riwayat: 'Riwayat & Uji', presensi: 'Presensi', layanan: 'Layanan Sekolah', pengaturan: 'Pengaturan' };
 
 const store = buatStore(penyimpananIDB);
 let aktif = 'beranda';
