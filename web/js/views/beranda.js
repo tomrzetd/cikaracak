@@ -2,6 +2,7 @@
 import { analisis, persen } from '../core/analisis.js';
 import { esc, fmtP } from '../util.js';
 import { WARNA, kartuStat, kosong } from './bersama.js';
+import { ringkasanModul } from './layanan.js';
 
 export function render(el, ctx) {
   const { store } = ctx;
@@ -15,15 +16,16 @@ export function render(el, ctx) {
         ${k ? '<button class="btn utama" data-go="kuis">Isi jawaban kuis</button><button class="btn" data-go="saran">Lihat saran</button>' : '<button class="btn utama" data-go="kuis">Buat kuis pertama</button>'}
       </div>
     </div></div>`;
-  if (!r) { el.innerHTML = sapa + kosong('Mulai dari kelas', 'Tambahkan kelas dan daftar siswa dulu.', '<button class="btn utama" data-go="kelas">Tambah kelas</button>'); return; }
-  if (!k) { el.innerHTML = sapa + kosong('Belum ada kuis di kelas ini', 'Buat kuis, pilih konsepnya, dan cetak lembar jawaban.', '<button class="btn utama" data-go="kuis">Buat kuis</button>'); return; }
+  const modul = ringkasanModul();
+  if (!r) { el.innerHTML = sapa + modul + kosong('Mulai dari kelas', 'Tambahkan kelas dan daftar siswa dulu.', '<button class="btn utama" data-go="kelas">Tambah kelas</button>'); return; }
+  if (!k) { el.innerHTML = sapa + modul + kosong('Belum ada kuis di kelas ini', 'Buat kuis, pilih konsepnya, dan cetak lembar jawaban.', '<button class="btn utama" data-go="kuis">Buat kuis</button>'); return; }
 
   const siswa = store.siswaAktif();
   const h = analisis(k, siswa);
   const nU = h.konsep.filter(x => x.status === 'ulang').length;
   const tot = siswa.length || 1, nD = h.dampingi.length, nA = h.ikut - nD, nT = siswa.length - h.ikut;
   const a1 = (nA / tot) * 360, a2 = a1 + (nD / tot) * 360;
-  el.innerHTML = sapa + `
+  el.innerHTML = sapa + modul + `
     <div class="stats">
       ${kartuStat('mint', '', 'Siswa ikut', `${h.ikut}/${siswa.length}`, 'kuis ini')}
       ${kartuStat('peach', '', 'Konsep', k.konsep.length, `${k.soal.length} soal`)}
