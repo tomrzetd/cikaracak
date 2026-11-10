@@ -295,3 +295,17 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .
   .modul-card { min-height: 0; padding: 18px; }
   .modul-judul .btn { align-self: flex-start; }
 }
+
+
+/* ---------- Cikaracak Pustaka (SIMULASI LOKAL) v0.6 ---------- */
+.pustaka-hero { background: linear-gradient(120deg, var(--sky), var(--surface) 72%, var(--mint)); }
+.pustaka-stats { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 12px; }
+.pustaka-stat { padding: 15px; gap: 5px; border-radius: 17px; }
+.pustaka-stat span { font-size: .8rem; color: var(--muted); font-weight: 750; }
+.pustaka-stat strong { font-size: 2rem; line-height: 1.1; }
+.pustaka-tabs { flex-wrap: wrap; }
+.pustaka-cari { width: min(310px,100%); }
+.pustaka-terlambat { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.pustaka-terlambat:last-child { border-bottom: 0; }
+@media (max-width: 1050px) { .pustaka-stats { grid-template-columns: repeat(3,minmax(0,1fr)); } }
+@media (max-width: 600px) { .pustaka-stats { grid-template-columns: repeat(2,minmax(0,1fr)); } .pustaka-stat strong { font-size: 1.6rem; } }
