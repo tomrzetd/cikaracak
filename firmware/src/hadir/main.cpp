@@ -23,13 +23,14 @@
 #include <time.h>
 #include <esp_system.h>
 #include <esp_wifi.h>
+#include <esp_netif.h>
 #include <sys/time.h>
 #include "pin.h"
 #include "logika.h"
 #include "wajah.h"
 #include "akar_ca.h"
 
-#define VERSI "0.3.0-serial"
+#define VERSI "0.3.1-dns"
 #ifndef ZONA_WAKTU
 #define ZONA_WAKTU "WIB-7"          // WITA-8 / WIT-9 untuk sekolah di zona lain
 #endif
@@ -71,6 +72,9 @@ static Preferences pref;
 // Default C3 = 8,5 dBm (kompatibilitas); S3 = 19,5 dBm.
 static uint8_t profilDayaWifi = WIFI_DAYA_RENDAH ? 0 : 3;
 static bool wifiHemat = true;
+static IPAddress dnsManual;
+static bool pakaiDnsManual = false;
+static volatile bool dnsPerluTerap = false;
 static void terapkanDayaWifi() {
   switch (profilDayaWifi) {
     case 0: WiFi.setTxPower(WIFI_POWER_8_5dBm); break;
@@ -98,6 +102,8 @@ static void muatPengaturan() {
   profilDayaWifi = pref.getUChar("wifi_tx", profilDayaWifi);
   if (profilDayaWifi > 3) profilDayaWifi = 0;
   wifiHemat = pref.getBool("wifi_sleep", true);
+  String dnsTersimpan = pref.getString("dns", "");
+  pakaiDnsManual = dnsManual.fromString(dnsTersimpan) && (uint32_t)dnsManual != 0;
   pref.end();
   size_t n = strlen(cfg.server);
   while (n && cfg.server[n - 1] == '/') cfg.server[--n] = 0;   // buang garis miring di akhir
@@ -387,9 +393,11 @@ static const char *artiAlasan(uint8_t a) {
 static void peristiwaWifi(arduino_event_id_t e, arduino_event_info_t info) {
   if (e == ARDUINO_EVENT_WIFI_STA_DISCONNECTED) {
     alasanPutus = info.wifi_sta_disconnected.reason;
+    dnsPerluTerap = false;
     Serial.printf("[wifi] putus, alasan %u (%s)\n", alasanPutus, artiAlasan(alasanPutus));
   } else if (e == ARDUINO_EVENT_WIFI_STA_GOT_IP) {
     alasanPutus = 0; pernahTersambung = true;
+    dnsPerluTerap = true; // terapkan di loop, jangan memanggil konfigurasi netif di event WiFi
     Serial.printf("[wifi] tersambung %s, IP %s, RSSI %d\n", WiFi.SSID().c_str(), WiFi.localIP().toString().c_str(), WiFi.RSSI());
   }
 }
@@ -519,6 +527,63 @@ static void prosesPortal() {
   }
 }
 
+
+static void tampilDnsSerial() {
+  // IPAddress WiFi.dnsIP() adalah DNS aktif pada STA, bukan DNS laptop.
+  Serial.printf("[dns] gateway=%s subnet=%s dns1=%s dns2=%s sumber=%s\n",
+                WiFi.gatewayIP().toString().c_str(),
+                WiFi.subnetMask().toString().c_str(),
+                WiFi.dnsIP(0).toString().c_str(),
+                WiFi.dnsIP(1).toString().c_str(),
+                pakaiDnsManual ? "MANUAL" : "DHCP");
+  if (pakaiDnsManual) Serial.printf("[dns] override=%s\n", dnsManual.toString().c_str());
+}
+static bool terapkanDnsManual() {
+  if (!pakaiDnsManual || WiFi.status() != WL_CONNECTED) return false;
+  esp_netif_t *netif = esp_netif_get_handle_from_ifkey("WIFI_STA_DEF");
+  if (!netif) { Serial.println("[dns] antarmuka WiFi STA belum tersedia"); return false; }
+  esp_netif_dns_info_t info{};
+  info.ip.type = ESP_IPADDR_TYPE_V4;
+  const uint8_t *ip = dnsManual.raw_address();
+  IP4_ADDR(&info.ip.u_addr.ip4, ip[0], ip[1], ip[2], ip[3]);
+  esp_err_t err = esp_netif_set_dns_info(netif, ESP_NETIF_DNS_MAIN, &info);
+  if (err != ESP_OK) {
+    Serial.printf("[dns] gagal menerapkan override, esp_err=0x%x\n", (unsigned)err);
+    return false;
+  }
+  Serial.printf("[dns] aktif: %s (manual, IP alat tetap dari DHCP)\n", dnsManual.toString().c_str());
+  return true;
+}
+static void prosesDnsManual() {
+  if (dnsPerluTerap && WiFi.status() == WL_CONNECTED) {
+    dnsPerluTerap = false;
+    if (pakaiDnsManual) terapkanDnsManual();
+  }
+}
+static void ujiDnsSerial() {
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("[dns] WiFi belum tersambung");
+    return;
+  }
+  String alamat = cfg.server;
+  if (alamat.startsWith("https://")) alamat.remove(0, 8);
+  else if (alamat.startsWith("http://")) alamat.remove(0, 7);
+  int slash = alamat.indexOf('/');
+  if (slash >= 0) alamat.remove(slash);
+  if (!alamat.length()) {
+    Serial.println("[dns] server belum diisi: config server https://PROJECT.supabase.co");
+    return;
+  }
+  Serial.printf("[dns] mencari %s ...\n", alamat.c_str());
+  IPAddress hasil;
+  uint32_t sejak = millis();
+  int ok = WiFi.hostByName(alamat.c_str(), hasil);
+  if (ok) Serial.printf("[dns] OK: %s -> %s (%lu ms)\n",
+                        alamat.c_str(), hasil.toString().c_str(), (unsigned long)(millis()-sejak));
+  else Serial.printf("[dns] GAGAL: %s (%lu ms); periksa DNS dan kestabilan WiFi\n",
+                     alamat.c_str(), (unsigned long)(millis()-sejak));
+}
+
 // ---------------- konfigurasi & diagnostik lewat USB Serial ----------------
 // Perintah tidak di-echo (sandi dan kunci tidak dicetak lagi). Serial CDC ESP32-C3
 // berjalan di USB-C bawaan papan; kabel SPI/perangkat tidak menghabiskan port ini.
@@ -537,6 +602,10 @@ static void bantuanSerial() {
   Serial.println(F("wifi forget                : hapus HANYA WiFi, bukan kunci/antrean"));
   Serial.println(F("wifi tx 8.5|11|15|19.5     : profil daya pancar (dBm)"));
   Serial.println(F("wifi sleep on|off          : hemat daya modem"));
+  Serial.println(F("dns show                   : DNS dari DHCP / manual dan gateway"));
+  Serial.println(F("dns test                   : resolve domain server dengan DNS ESP32"));
+  Serial.println(F("dns use 1.1.1.1            : DNS manual, IP tetap DHCP (tersimpan)"));
+  Serial.println(F("dns auto                   : kembali ke DNS DHCP + reboot"));
   Serial.println(F("config show                : cek konfigurasi (rahasia disamarkan)"));
   Serial.println(F("config server https://...  : alamat Supabase"));
   Serial.println(F("config anon NILAI          : publishable/anon key"));
@@ -558,6 +627,7 @@ static void statusSerial() {
                 WiFi.status() == WL_CONNECTED ? WiFi.RSSI() : 0, WiFi.channel(),
                 WiFi.status() == WL_CONNECTED ? WiFi.BSSIDstr().c_str() : "-",
                 (unsigned)alasanPutus, artiAlasan(alasanPutus));
+  tampilDnsSerial();
   Serial.printf("[status] TX=%s dBm sleep=%s portal=%s server=%s waktu=%s\n",
                 namaDayaWifi(), wifiHemat ? "ON" : "OFF",
                 portalAktif ? "ON" : "OFF", serverOk ? "OK" : "BELUM",
@@ -595,6 +665,43 @@ static void perintahSerial(String baris) {
   if (baris == "help" || baris == "?") { bantuanSerial(); return; }
   if (baris == "status") { statusSerial(); return; }
   if (baris == "config show") { konfigurasiSerial(); return; }
+  if (baris == "dns show") { tampilDnsSerial(); return; }
+  if (baris == "dns test") { ujiDnsSerial(); return; }
+  if (baris.startsWith("dns use ")) {
+    if (WiFi.status() != WL_CONNECTED || portalAktif) {
+      Serial.println("[dns] sambungkan WiFi dan tutup portal dulu");
+      return;
+    }
+    String teks = baris.substring(8);
+    teks.trim();
+    IPAddress calon;
+    if (!calon.fromString(teks) || (uint32_t)calon == 0 || calon[0] == 0 ||
+        calon[0] >= 224 || calon == IPAddress(255,255,255,255)) {
+      Serial.println("[dns] masukkan IPv4 DNS unicast valid, misalnya: dns use 1.1.1.1");
+      return;
+    }
+    dnsManual = calon;
+    pakaiDnsManual = true;
+    if (!terapkanDnsManual()) {
+      Serial.println("[dns] belum tersimpan; cek sambungan lalu ulangi");
+      return;
+    }
+    pref.begin("ckhadir", false);
+    pref.putString("dns", dnsManual.toString());
+    pref.end();
+    Serial.println("[dns] tersimpan. Jalankan dns test (bisa juga sesudah reboot).");
+    return;
+  }
+  if (baris == "dns auto") {
+    pakaiDnsManual = false;
+    pref.begin("ckhadir", false);
+    pref.remove("dns");
+    pref.end();
+    Serial.println("[dns] kembali ke DNS bawaan DHCP setelah reboot");
+    delay(200);
+    ESP.restart();
+    return;
+  }
   if (baris == "reboot") { Serial.println("[serial] restart"); delay(150); ESP.restart(); }
   if (baris == "portal") { bukaPortal(); return; }
   if (baris == "portal off") { tutupPortal(); return; }
@@ -865,6 +972,7 @@ void loop() {
   prosesPortal();
   bacaSerial();
   hasilPindaiWifi();
+  if (!portalAktif) prosesDnsManual();
   if (portalAktif) { delay(1); return; }  // layar portal tidak ditimpa animasi siaga
   uint32_t kini = millis();
 
