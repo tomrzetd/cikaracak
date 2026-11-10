@@ -70,7 +70,8 @@ def jalan(page, nama):
     page.screenshot(path=SHOT / f'{nama}-0-layanan.png', full_page=True)
     page.click('#v-layanan [data-modul=asesmen] [data-go=kuis]')
     expect(page.locator('#v-kuis')).to_be_visible()
-    # Pustaka Demo (offline, fiktif): katalog, pinjam-kembali, inventaris dan laporan.
+    # Pratinjau dasbor publik dan pustaka demo dengan data fiktif.
+    page.click('.nav[data-v=layanan]')
     page.click('#v-layanan [data-modul=hadir] [data-go=dasborPublik]')
     expect(page.locator('#v-dasborPublik')).to_contain_text('Pratinjau Dasbor Sekolah')
     expect(page.locator('#v-dasborPublik')).to_contain_text('SIMULASI LOKAL')
