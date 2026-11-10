@@ -39,6 +39,7 @@ const FILE = [
   'js/views/presensi-demo.js',
   'js/views/layanan.js',
   'js/views/pustaka.js',
+  'js/views/dasbor-publik.js',
   'js/views/pengaturan.js',
 ];
 
