@@ -41,7 +41,7 @@ psql -q -v ON_ERROR_STOP=1 -c "drop database if exists uji_naik" -c "create data
 export PGDATABASE=uji_naik
 psql -q -v ON_ERROR_STOP=1 -f "$ROOT/tools/supabase/stub_auth.sql"
 for f in "$ROOT"/supabase/migrations/*.sql; do
-  case "$(basename "$f")" in 20261110000001*|20261110000002*|20261024000003*) continue;; esac
+  case "$(basename "$f")" in 20261110000001*|20261110000002*|20261110000003*|20261024000003*) continue;; esac
   psql -q -v ON_ERROR_STOP=1 -f "$f"
 done
 psql -q -v ON_ERROR_STOP=1 <<'SQL'
