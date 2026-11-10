@@ -81,7 +81,7 @@ def jalan(page, nama):
     expect(page.locator('#v-pustaka .pustaka-stat').nth(3)).to_contain_text('3')
     page.locator('#v-pustaka tr', has=page.locator('td:text-is("EX-002 · Atlas Nusantara untuk Pelajar")')).locator('[data-pu-kembali]').click()
     expect(page.locator('#v-pustaka .pustaka-stat').nth(3)).to_contain_text('2')
-    page.click('[data-pu-tab=katalog]')
+    page.locator('.pustaka-tabs [data-pu-tab=katalog]').click()
     expect(page.locator('#v-pustaka')).to_contain_text('Atlas Nusantara')
     page.fill('#puJudul', 'Buku Demo Tambahan')
     page.fill('#puPenulis', 'Penulis Fiktif')
