@@ -6,6 +6,7 @@ import * as srv from '../server/supabase.js';
 import { esc, toast, konfirmasiDuaKetuk } from '../util.js';
 import { teksHasil } from '../core/tanda.js';
 import { kartuStat } from './bersama.js';
+import { dasborFiktif } from '../core/dasbor-fiktif.js';
 
 const SERI = [['hadir', 'Hadir tepat waktu'], ['terlambat', 'Terlambat'], ['izin_sakit', 'Izin / sakit'], ['tidak_tercatat', 'Tidak tercatat']];
 const tglPendek = t => { const [, m, d] = t.split('-'); return `${+d}/${+m}`; };
@@ -20,7 +21,22 @@ const online = a => a.terakhir_kontak && Date.now() - new Date(a.terakhir_kontak
 // ---------- memuat ----------
 export async function muat(st) {
   st.db = st.db || { hari: 14, demo: false };
-  if (st.tab === 'dasbor') st.isi.dasbor = await srv.rpc('dasbor_sekolah', { p_hari: st.db.hari, p_demo: st.db.demo });
+  if (st.tab === 'dasbor') {
+    if (st.db.lokal) {
+      st.isi.dasbor = dasborFiktif({ hari: st.db.hari });
+    } else {
+      try {
+        st.isi.dasbor = await srv.rpc('dasbor_sekolah', { p_hari: st.db.hari, p_demo: st.db.demo });
+        st.db.kesalahan = '';
+      } catch (e) {
+        if (e.status !== 404 && e.kode !== 'PGRST202') throw e;
+        // Fungsi belum ada di server Supabase. Jangan mengklaim ini data nyata.
+        st.db.lokal = true;
+        st.db.kesalahan = 'Fungsi dasbor_sekolah belum tersedia di Supabase. Jalankan migrasi dasbor pada SQL Editor untuk mengaktifkan laporan server asli.';
+        st.isi.dasbor = dasborFiktif({ hari: st.db.hari });
+      }
+    }
+  }
   if (st.tab === 'demo') {
     st.isi.demo = (await srv.daftar('rombel', 'id,nama', { demo: 'is.true' }))[0] || null;
     await muatFeed(st);
@@ -85,13 +101,20 @@ export function renderDasbor(st) {
   const d = st.isi.dasbor;
   const kontrol = `<div class="row">
     <label>Rentang <select id="dbHari">${[7, 14, 30].map(h => `<option value="${h}"${h === st.db?.hari ? ' selected' : ''}>${h} hari terakhir</option>`).join('')}</select></label>
-    <label>Data <select id="dbSumber"><option value="0"${st.db?.demo ? '' : ' selected'}>Sekolah</option><option value="1"${st.db?.demo ? ' selected' : ''}>Kelas demo (simulasi)</option></select></label></div>`;
+    ${st.db?.publik ? '<span class="pill peach">Data fiktif, hanya pratinjau</span>' : `<label>Data <select id="dbSumber"><option value="0"${(!st.db?.lokal && !st.db?.demo) ? ' selected' : ''}>Sekolah (server)</option><option value="1"${(!st.db?.lokal && st.db?.demo) ? ' selected' : ''}>Kelas demo (server)</option><option value="2"${st.db?.lokal ? ' selected' : ''}>Pratinjau lokal (fiktif)</option></select></label>`}</div>`;
   if (!d) return `<div class="card clay">${kontrol}<p class="muted">Memuat…</p></div>`;
   const total = (d.harian || []).reduce((a, x) => ({ h: a.h + x.hadir + x.terlambat, n: a.n + x.hadir + x.terlambat + x.izin_sakit + x.tidak_tercatat, t: a.t + x.terlambat }), { h: 0, n: 0, t: 0 });
   const acuan = (d.harian || []).find(x => x.tanggal === d.acuan) || { hadir: 0, terlambat: 0, izin_sakit: 0, tidak_tercatat: 0 };
   const label = d.acuan === d.hari_ini ? 'hari ini' : d.acuan ? tglPendek(d.acuan) : '—';
   return `<div class="card clay">${kontrol}
-    ${st.db?.demo ? '<p class="status">Menampilkan kelas demo dengan siswa fiktif dan data simulasi, bukan data sekolah.</p>' : ''}
+    ${st.db?.lokal ? `<div class="note clay" style="margin:5px 0">
+      <h3>SIMULASI LOKAL — bukan laporan sekolah</h3>
+      <p class="kecil">Grafik dan seluruh angka di bawah dibuat dari data fiktif di browser. Tidak mengambil presensi siswa asli.</p>
+      ${st.db.kesalahan ? `<p class="status err">${esc(st.db.kesalahan)}</p>
+        <p class="kecil">Panduan migrasi: <a href="https://github.com/tomrzetd/cikaracak/blob/hadir-uji-kartu/supabase/migrations/20261110000002_dasbor_demo.sql" target="_blank" rel="noopener noreferrer">20261110000002_dasbor_demo.sql</a>. Jalankan pada proyek Supabase yang benar, lalu muat ulang.</p>
+        <button class="btn kecil" data-aksi="dasbor-coba-server">Coba laporan server lagi</button>` : ''}</div>`
+      : st.db?.demo ? '<p class="status">Menampilkan kelas demo dari server dengan siswa fiktif.</p>'
+      : '<p class="muted kecil">Laporan presensi dari server sekolah.</p>'}
     <div class="stats">
       ${kartuStat('mint', '', `Hadir ${label}`, `${persen(acuan.hadir + acuan.terlambat, d.siswa)}%`, `${acuan.hadir + acuan.terlambat} dari ${d.siswa} siswa`)}
       ${kartuStat('butter', '', `Terlambat ${label}`, acuan.terlambat, 'siswa')}
@@ -168,13 +191,19 @@ export async function aksi(a, b, st, ctx, muatTab) {
     toast(`Kelas demo dibuat: ${j.siswa} siswa, ${j.hari_sekolah} hari sekolah`); st.profil = null; muatTab(ctx); return true;
   }
   if (a === 'demo-hapus') { konfirmasiDuaKetuk(b, async () => { try { await srv.rpc('hapus_kelas_demo'); toast('Kelas demo dihapus'); st.profil = null; muatTab(ctx); } catch (e) { toast(e.message); } }, 'Yakin hapus?'); return true; }
-  if (a === 'demo-dasbor') { st.db = { hari: 14, demo: true }; st.tab = 'dasbor'; muatTab(ctx); return true; }
+  if (a === 'demo-dasbor') { st.db = { hari: 14, demo: true, lokal: false }; st.tab = 'dasbor'; muatTab(ctx); return true; }
+  if (a === 'dasbor-coba-server') { st.db.lokal = false; st.db.demo = false; st.db.kesalahan = ''; muatTab(ctx); return true; }
   return false;
 }
 
 export function ubahIsian(e, st, ctx, muatTab) {
   if (e.target.id === 'dbHari') { st.db.hari = Number(e.target.value); muatTab(ctx); }
-  if (e.target.id === 'dbSumber') { st.db.demo = e.target.value === '1'; muatTab(ctx); }
+  if (e.target.id === 'dbSumber') {
+    st.db.demo = e.target.value === '1';
+    st.db.lokal = e.target.value === '2';
+    st.db.kesalahan = '';
+    muatTab(ctx);
+  }
   if (e.target.id === 'ujiAlat') { st.uji = { alat: e.target.value }; ctx.render(); }
 }
 

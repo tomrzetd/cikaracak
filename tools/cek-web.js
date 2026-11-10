@@ -50,7 +50,7 @@ const idHtml = new Set([...html.matchAll(/id="([^"]+)"/g)].map(m => m[1]));
 for (const f of [join(WEB, 'js/app.js'), join(WEB, 'js/util.js'), join(WEB, 'js/views/cetak.js')]) {
   for (const m of readFileSync(f, 'utf8').matchAll(/\$\('#([\w-]+)'\)/g)) if (!idHtml.has(m[1])) galat.push(`${relative(ROOT, f)} mencari #${m[1]}, tetapi tidak ada di index.html`);
 }
-for (const v of ['beranda', 'kelas', 'kuis', 'saran', 'riwayat', 'presensi', 'layanan', 'pengaturan']) if (!idHtml.has('v-' + v)) galat.push(`index.html tidak punya section #v-${v}`);
+for (const v of ['beranda', 'kelas', 'kuis', 'saran', 'riwayat', 'presensi', 'pustaka', 'dasborPublik', 'layanan', 'pengaturan']) if (!idHtml.has('v-' + v)) galat.push(`index.html tidak punya section #v-${v}`);
 
 // 4. manifest
 const man = JSON.parse(readFileSync(join(WEB, 'manifest.webmanifest'), 'utf8'));

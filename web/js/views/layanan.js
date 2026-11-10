@@ -13,7 +13,7 @@ const MODUL = [
     keterangan: 'Perlu server sekolah dan akun berwenang.', tujuan: 'presensi' },
   { id: 'pustaka', nama: 'Perpustakaan', ikon: '▤', tema: 'sky',
     deskripsi: 'Katalog buku, eksemplar, peminjaman dan pengembalian oleh petugas.',
-    keterangan: 'Tahap berikutnya. Belum menerima transaksi.', tujuan: null },
+    keterangan: 'Demo offline dengan data fiktif: katalog, pinjam-kembali, jatuh tempo, laporan.', tujuan: 'pustaka' },
   { id: 'keuangan', nama: 'Administrasi Keuangan', ikon: '◈', tema: 'butter',
     deskripsi: 'Koperasi, tabungan siswa, dan kegiatan resmi dengan pembukuan terpisah.',
     keterangan: 'Masih rancangan. Belum ada pencatatan pembayaran.', tujuan: null },
@@ -27,6 +27,7 @@ const MODUL = [
 
 function keadaan(m, profil) {
   if (m.id === 'asesmen') return { label: 'Siap • Offline', kelas: 'siap' };
+  if (m.id === 'pustaka') return { label: 'Demo • Offline', kelas: 'siap' };
   if (m.id === 'hadir') return profil
     ? { label: 'Masuk ke server', kelas: 'siap' }
     : { label: 'Perlu akun sekolah', kelas: 'perlu' };
@@ -44,8 +45,9 @@ function kartu(m, profil, ringkas = false) {
     <p>${m.deskripsi}</p>
     ${ringkas ? '' : `<p class="modul-catatan">${m.keterangan}</p>`}
     ${m.tujuan
-      ? `<button type="button" class="btn kecil modul-buka" data-go="${m.tujuan}">Buka ${m.id === 'asesmen' ? 'Asesmen' : 'Presensi'} <span aria-hidden="true">→</span></button>`
+      ? `<button type="button" class="btn kecil modul-buka" data-go="${m.tujuan}">Buka ${m.id === 'asesmen' ? 'Asesmen' : m.id === 'pustaka' ? 'Demo Pustaka' : 'Presensi'} <span aria-hidden="true">→</span></button>`
       : `<span class="modul-belum" aria-label="Modul belum tersedia">Belum tersedia untuk transaksi</span>`}
+    ${m.id === 'hadir' ? '<button type="button" class="btn kecil polos" data-go="dasborPublik">Pratinjau dasbor sekolah →</button>' : ''}
   </article>`;
 }
 
@@ -56,7 +58,7 @@ export function ringkasanModul() {
     <div class="modul-judul">
       <div><span class="modul-eyebrow">EKOSISTEM CIKARACAK</span>
         <h2 id="judulModulBeranda">Satu sekolah, layanan yang saling terhubung</h2>
-        <p class="muted kecil">Dua layanan sudah dapat dicoba. Modul lainnya disiapkan bertahap, tanpa mengganggu asesmen offline.</p></div>
+        <p class="muted kecil">Tiga layanan sudah dapat dicoba (termasuk Pustaka Demo). Modul lainnya disiapkan bertahap, tanpa mengganggu asesmen offline.</p></div>
       <button type="button" class="btn kecil" data-go="layanan">Jelajahi modul <span aria-hidden="true">→</span></button>
     </div>
     <div class="modul-grid modul-ringkas">${MODUL.slice(0, 4).map(m => kartu(m, profil, true)).join('')}</div>
@@ -68,7 +70,7 @@ export function render(el) {
   const statusLogin = profil
     ? `Akun sekolah: <b>${esc(profil.nama)}</b> · ${esc(profil.sekolah?.nama || 'Sekolah terhubung')}`
     : 'Belum masuk ke server sekolah. Asesmen tetap bisa digunakan secara offline.';
-  const tugas = (profil?.tugas || []).map(t => t.jenis).filter(Boolean);
+  const tugas = [...new Set((profil?.tugas || []).map(t => t.jenis).filter(Boolean))];
   el.innerHTML = `
     <div class="hero clay modul-hero">
       <div class="copy">

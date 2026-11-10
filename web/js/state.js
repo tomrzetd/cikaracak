@@ -15,7 +15,7 @@ export function dataKosong() {
 export function dataContoh() {
   const d = dataKosong();
   d.contoh = true;
-  d.guru.nama = 'Bu Guru IPA';
+  // Data contoh sengaja tidak mengklaim identitas guru tertentu.
   const nama = ['Adit', 'Bella', 'Cahya', 'Dewi', 'Fajar', 'Gilang', 'Hana', 'Intan', 'Jajang', 'Kiki', 'Lutfi', 'Nisa'];
   const r = { id: 'r-contoh', nama: 'VIII-B (contoh)', siswa: nama.map((n, i) => ({ id: 'c' + (i + 1), nama: n, aktif: true })) };
   d.rombel.push(r);
