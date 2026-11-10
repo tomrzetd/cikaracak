@@ -109,67 +109,79 @@ Tanpa membutuhkan WiFi, gunakan **kabel USB data** dari ESP32-C3 ke komputer,
 kemudian buka **PlatformIO Serial Monitor / Arduino Serial Monitor** di **115200 baud**.
 Pilih line ending **Newline** atau **Both NL & CR**. Pada ESP32-C3, gunakan
 port USB-C bawaan (USB CDC); jika port tidak muncul setelah flash, tekan RST
-dan pilih ulang port COM. Ketik \`help\` lalu Enter.
+dan pilih ulang port COM. Ketik `help` lalu Enter.
 
 **Portal WiFi dan Serial sekarang berjalan bersamaan.** Portal tetap bisa dibuka
-dengan BOOT 3 detik atau perintah \`portal\`; bukan lagi menghentikan loop selama
+dengan BOOT 3 detik atau perintah `portal`; bukan lagi menghentikan loop selama
 5 menit. Portal menutup sendiri setelah 5 menit bila tidak disimpan.
 
 Contoh transkrip perintah (ganti nama SSID dan sandi dengan milik sendiri):
 
-\`\`\`text
+```text
 help
 status
 wifi scan
 wifi set Nama WiFi Sekolah|SandiWifiSekolah123
-\`\`\`
+```
 
-Perintah \`wifi set\` menyimpan jaringan lalu **restart**; contoh di atas
-menggunakan pemisah \`|\` agar SSID boleh mengandung spasi. Untuk WiFi terbuka:
-\`wifi set Nama Wifi Terbuka|\` (tidak dianjurkan untuk alat produksi).
+Perintah `wifi set` menyimpan jaringan lalu **restart**; contoh di atas
+menggunakan pemisah `|` agar SSID boleh mengandung spasi. Untuk WiFi terbuka:
+`wifi set Nama Wifi Terbuka|` (tidak dianjurkan untuk alat produksi).
 
 Perintah diagnosis dan pemeliharaan:
 
 | Perintah | Kegunaan |
 |---|---|
-| \`status\` | Firmware, WiFi, SSID, IP, RSSI dBm, kanal, BSSID, alasan putus, heap, antrean offline, waktu, status server |
-| \`wifi scan\` | Daftar jaringan 2,4 GHz beserta RSSI dan kanal, tanpa menampilkan sandi |
-| \`wifi reconnect\` | Coba sambungkan kembali kredensial yang sudah disimpan |
-| \`wifi tx 8.5\` | Profil TX rendah bawaan C3; bisa dicoba sebagai pembanding |
-| \`wifi tx 11\` / \`wifi tx 15\` / \`wifi tx 19.5\` | Profil TX yang lebih tinggi untuk pengujian sinyal; tidak otomatis lebih baik jika catu daya/antena bermasalah |
-| \`wifi sleep off\` | Matikan penghematan modem untuk pengujian latensi/putus-sambung |
-| \`wifi sleep on\` | Kembalikan penghematan modem |
-| \`wifi forget\` | **Hanya menghapus WiFi** dan restart; server, kunci alat dan antrean offline tidak dihapus |
-| \`config show\` | Tampilkan konfigurasi, **anon key dan kunci alat tidak ditampilkan** |
-| \`config server https://PROJECT.supabase.co\` | Simpan URL server; restart |
-| \`config anon sb_publishable_...\` | Simpan publishable / anon key; restart |
-| \`config id A1B2C3D4\` | Simpan ID alat 8 karakter; restart |
-| \`config key <64_digit_hex>\` | Simpan kunci alat 32 byte (64 heksadesimal); restart |
-| \`config message Selamat datang|Tempel kartu\` | Simpan tulisan layar; restart |
-| \`portal\` / \`portal off\` | Buka / tutup portal tanpa memutus Serial |
-| \`reboot\` | Restart alat |
+| `status` | Firmware, WiFi, SSID, IP, RSSI dBm, kanal, BSSID, alasan putus, heap, antrean offline, waktu, status server |
+| `wifi scan` | Daftar jaringan 2,4 GHz beserta RSSI dan kanal, tanpa menampilkan sandi |
+| `wifi reconnect` | Coba sambungkan kembali kredensial yang sudah disimpan |
+| `wifi tx 8.5` | Profil TX rendah bawaan C3; bisa dicoba sebagai pembanding |
+| `wifi tx 11` / `wifi tx 15` / `wifi tx 19.5` | Profil TX yang lebih tinggi untuk pengujian sinyal; tidak otomatis lebih baik jika catu daya/antena bermasalah |
+| `wifi sleep off` | Matikan penghematan modem untuk pengujian latensi/putus-sambung |
+| `wifi sleep on` | Kembalikan penghematan modem |
+| `dns show` | Tampilkan DNS utama/cadangan, gateway, subnet, mode DNS DHCP/manual |
+| `dns test` | Uji resolusi domain server langsung dari ESP32 dan ukur waktunya |
+| `dns use 1.1.1.1` | Ganti DNS utama menjadi Cloudflare tanpa mengubah IP DHCP; disimpan di NVS |
+| `dns auto` | Kembali ke DNS dari DHCP setelah restart |
+| `wifi forget` | **Hanya menghapus WiFi** dan restart; server, kunci alat dan antrean offline tidak dihapus |
+| `config show` | Tampilkan konfigurasi, **anon key dan kunci alat tidak ditampilkan** |
+| `config server https://PROJECT.supabase.co` | Simpan URL server; restart |
+| `config anon sb_publishable_...` | Simpan publishable / anon key; restart |
+| `config id A1B2C3D4` | Simpan ID alat 8 karakter; restart |
+| `config key <64_digit_hex>` | Simpan kunci alat 32 byte (64 heksadesimal); restart |
+| `config message Selamat datang|Tempel kartu` | Simpan tulisan layar; restart |
+| `portal` / `portal off` | Buka / tutup portal tanpa memutus Serial |
+| `reboot` | Restart alat |
 
 **Keamanan:** Serial adalah antarmuka administrasi fisik. Jangan mempublikasikan
-sandi WiFi, kunci alat, atau riwayat perintah dari komputer. Log \`status\` dan
-\`config show\` menyamarkan rahasia, tetapi perintah yang diketik mungkin disimpan
+sandi WiFi, kunci alat, atau riwayat perintah dari komputer. Log `status` dan
+`config show` menyamarkan rahasia, tetapi perintah yang diketik mungkin disimpan
 oleh aplikasi terminal. Jangan menyambungkan port Serial ke internet tanpa autentikasi.
+
+**Jika laptop berhasil `nslookup` tetapi ESP32 gagal DNS:** jalankan `dns show` dan `dns test` dulu.
+Jika DNS utama tidak valid atau bermasalah, coba `dns use 1.1.1.1` kemudian `dns test`.
+Perubahan DNS tidak mengunci alamat IP perangkat (tetap DHCP) dan tidak menghapus antrean offline.
+DNS manual disimpan di Preferences, lalu dipasang ulang saat perangkat mendapat alamat IP.
+Untuk memulihkan DNS DHCP gunakan `dns auto` (restart).
+Jangan mengganti URL `config server` dengan alamat IP Cloudflare yang muncul di `nslookup`,
+karena koneksi HTTPS tetap membutuhkan hostname untuk TLS/SNI.
 
 **Uji A/B stabilitas WiFi** (catat hasil, tidak perlu menebak):
 
-1. Jalankan \`wifi scan\` di lokasi alat; catat RSSI dan kanal SSID target.
+1. Jalankan `wifi scan` di lokasi alat; catat RSSI dan kanal SSID target.
    Periksa apakah SSID target muncul dan apakah terdapat banyak SSID satu kanal.
-2. Sambungkan lalu jalankan \`status\` setelah 30 detik, 2 menit, dan 5 menit;
+2. Sambungkan lalu jalankan `status` setelah 30 detik, 2 menit, dan 5 menit;
    catat RSSI (mis. -55 dBm lebih baik daripada -85 dBm), alasan putus, dan heap.
-3. Coba \`wifi sleep off\`, bandingkan hasil di lokasi yang sama.
-4. Coba \`wifi tx 11\` lalu \`wifi tx 15\`, ulangi pengukuran.
+3. Coba `wifi sleep off`, bandingkan hasil di lokasi yang sama.
+4. Coba `wifi tx 11` lalu `wifi tx 15`, ulangi pengukuran.
    Jangan langsung memakai daya tertinggi: jika catu daya 3,3 V turun saat TX,
    daya lebih tinggi justru dapat membuat modul restart/putus.
 5. Setelah punya baseline, singkatkan kabel, jauhkan kabel dari antena,
    perbaiki solder, beri kapasitor dekat modul, ulangi pengujian dan bandingkan.
 
-Bila pada \`wifi scan\` SSID sekolah **tidak muncul sama sekali** tetapi
+Bila pada `wifi scan` SSID sekolah **tidak muncul sama sekali** tetapi
 hotspot 2,4 GHz HP muncul, periksa kanal/SSID/pengaturan band router sekolah.
-Bila jaringan muncul dengan RSSI kuat namun \`wifi set\` gagal autentikasi,
+Bila jaringan muncul dengan RSSI kuat namun `wifi set` gagal autentikasi,
 periksa sandi, batas perangkat, WPA-Enterprise, dan aturan MAC router.
 ESP32-C3 tidak mendukung jaringan 5 GHz.
 
