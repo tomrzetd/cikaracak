@@ -7,13 +7,13 @@
 insert into auth.users (id, email) values
  ('00000000-0000-0000-0000-0000000000b1', 'wali1@contoh.test'),
  ('00000000-0000-0000-0000-0000000000b2', 'wali2@contoh.test'),
- ('00000000-0000-0000-0000-0000000000a5', 'guru-b-tanpa-wali@contoh.test');
+ ('00000000-0000-0000-0000-0000000000c7', 'guru-b-tanpa-wali@contoh.test');
 -- Guru tambahan hanya mengajar VIII-B, tidak berstatus wali kelas VIII-A.
 insert into public.pengguna (id, sekolah_id, nama, peran)
- values ('00000000-0000-0000-0000-0000000000a5',
+ values ('00000000-0000-0000-0000-0000000000c7',
          '10000000-0000-0000-0000-000000000001','Guru B Tanpa Penugasan Wali','guru');
 insert into public.mengajar (guru_id, rombel_id, sekolah_id, mapel)
- values ('00000000-0000-0000-0000-0000000000a5',
+ values ('00000000-0000-0000-0000-0000000000c7',
          '20000000-0000-0000-0000-000000000002',
          '10000000-0000-0000-0000-000000000001','Matematika');
 
@@ -136,7 +136,7 @@ rollback;
 -- Guru a5 hanya mengajar VIII-B dan TIDAK punya tugas wali VIII-A.
 begin;
 set local role authenticated;
-set local request.jwt.claim.sub = '00000000-0000-0000-0000-0000000000a5';
+set local request.jwt.claim.sub = '00000000-0000-0000-0000-0000000000c7';
 do $ begin
  assert (select count(*) from public.foto_siswa) = 0, 'Guru tanpa penugasan kelas A tidak melihat foto kelas A';
  assert (select count(*) from public.persetujuan_foto) = 1, 'Guru B hanya melihat izin kelas B';
