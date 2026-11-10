@@ -18,8 +18,8 @@ export function render(el, ctx) {
   if (!r) { el.innerHTML = kosong('Belum ada kelas', 'Tambahkan kelas dan daftar siswa dulu.', '<button class="btn utama" data-go="kelas">Tambah kelas</button>'); return; }
   const k = store.kuis();
   const aksi = `<div class="row">
-      <button class="btn utama" data-aksi="kuis-baru">+ Kuis baru</button>
-      ${k ? `<button class="btn kecil" data-aksi="salin-kuis">Salin kuis ini</button><button class="btn kecil polos bahaya" data-aksi="hapus-kuis">Hapus kuis</button>` : ''}
+      <button class="btn utama" data-aksi="kuis-baru">+ Asesmen baru</button>
+      ${k ? `<button class="btn kecil" data-aksi="salin-kuis">Salin asesmen ini</button><button class="btn kecil polos bahaya" data-aksi="hapus-kuis">Hapus asesmen</button>` : ''}
     </div>`;
   if (!k) { el.innerHTML = aksi + kosong('Belum ada kuis di kelas ini', 'Buat kuis baru, lalu pilih konsepnya dari CP resmi atau tulis sendiri.'); return; }
   const siswa = store.siswaAktif();
@@ -29,7 +29,7 @@ export function render(el, ctx) {
   el.innerHTML = aksi + `
   <div class="cols">
     <div class="card clay">
-      <h3>Identitas kuis</h3>
+      <h3>Identitas asesmen</h3>
       <label>Topik <input data-f="topik" value="${esc(k.topik)}" maxlength="120"></label>
       <div class="grid2">
         <label>Tanggal <input type="date" data-f="tanggal" value="${esc(k.tanggal)}"></label>
@@ -106,9 +106,9 @@ export function pasang(el, ctx) {
     if (kt) { store.ketukJawaban(kid(), kt.dataset.siswa, +kt.dataset.ketuk); return; }
     const b = e.target.closest('[data-aksi]'); if (!b) return;
     switch (b.dataset.aksi) {
-      case 'kuis-baru': store.kuisBaru(); toast('Kuis baru dibuat. Atur konsep dan kuncinya.'); break;
-      case 'salin-kuis': store.salinKuis(kid()); toast('Kuis disalin tanpa jawaban'); break;
-      case 'hapus-kuis': konfirmasiDuaKetuk(b, () => { store.hapusKuis(kid()); toast('Kuis dihapus'); }, 'Yakin hapus kuis?'); break;
+      case 'kuis-baru': store.kuisBaru(); toast('Asesmen baru dibuat. Atur konsep dan kuncinya.'); break;
+      case 'salin-kuis': store.salinKuis(kid()); toast('Asesmen disalin tanpa jawaban'); break;
+      case 'hapus-kuis': konfirmasiDuaKetuk(b, () => { store.hapusKuis(kid()); toast('Asesmen dihapus'); }, 'Yakin hapus kuis?'); break;
       case 'tambah-konsep': store.ubahKuis(kid(), k => k.konsep.push({ id: uid('k'), nama: `Konsep ${k.konsep.length + 1}`, tp: '' })); break;
       case 'hapus-konsep': store.ubahKuis(kid(), k => {
         if (k.konsep.length < 2) return;
