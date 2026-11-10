@@ -2,7 +2,7 @@
 import { esc, toast, unduh, hariIni, konfirmasiDuaKetuk } from '../util.js';
 import { dataKosong, dataContoh } from '../state.js';
 
-export const VERSI_APP = '0.4.0';
+export const VERSI_APP = '0.5.0';
 
 export function render(el, ctx) {
   const { store } = ctx;
@@ -35,7 +35,7 @@ export function render(el, ctx) {
     </div>
     <div class="card clay">
       <h3>Tentang</h3>
-      <p class="kecil">Cikaracak ${VERSI_APP} (Cara Inovatif Kelola Asesmen Rutin, Analisis Cepat, Aksi Konsisten) — aplikasi open source (lisensi MIT) untuk asesmen formatif. Saran bersifat usulan; keputusan tetap di tangan guru. Bukan untuk nilai rapor.</p>
+      <p class="kecil">Cikaracak ${VERSI_APP} (Cara Inovatif Kelola Asesmen Rutin, Analisis Cepat, Aksi Konsisten) — aplikasi open source (lisensi MIT) untuk asesmen formatif dan layanan sekolah modular. Saran bersifat usulan; keputusan tetap di tangan guru. Bukan untuk nilai rapor.</p>
       <p class="kecil muted">Data CP: Keputusan Kepala BSKAP Kemendikdasmen Nomor 046/H/KR/2025, Lampiran II.</p>
       <p class="kecil">Kode sumber, panduan kontribusi, dan laporan masalah: lihat README di repositori GitHub proyek ini.</p>
     </div>
