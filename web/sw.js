@@ -1,6 +1,6 @@
 // Service worker: menyimpan seluruh aplikasi di perangkat agar tetap berjalan tanpa internet.
 // Naikkan VERSI setiap kali ada file yang berubah; tools/cek-web.js memeriksa daftar ini lengkap.
-const VERSI = 'cikaracak-0.5.0';
+const VERSI = 'cikaracak-0.6.0';
 const FILE = [
   './',
   'index.html',
@@ -21,6 +21,8 @@ const FILE = [
   'js/core/ljk.js',
   'js/core/omr.js',
   'js/core/tanda.js',
+  'js/core/pustaka-demo.js',
+  'js/core/dasbor-fiktif.js',
   'js/server/supabase.js',
   'js/views/bersama.js',
   'js/views/beranda.js',
@@ -36,6 +38,7 @@ const FILE = [
   'js/views/presensi-admin.js',
   'js/views/presensi-demo.js',
   'js/views/layanan.js',
+  'js/views/pustaka.js',
   'js/views/pengaturan.js',
 ];
 
