@@ -29,7 +29,7 @@
 #include "wajah.h"
 #include "akar_ca.h"
 
-#define VERSI "0.2.2"
+#define VERSI "0.3.0-serial"
 #ifndef ZONA_WAKTU
 #define ZONA_WAKTU "WIB-7"          // WITA-8 / WIT-9 untuk sekolah di zona lain
 #endif
@@ -67,6 +67,23 @@ struct Pengaturan {
 static Pengaturan cfg;
 static Preferences pref;
 
+// Profil daya pancar dapat diganti lewat USB Serial tanpa mengompilasi ulang.
+// Default C3 = 8,5 dBm (kompatibilitas); S3 = 19,5 dBm.
+static uint8_t profilDayaWifi = WIFI_DAYA_RENDAH ? 0 : 3;
+static bool wifiHemat = true;
+static void terapkanDayaWifi() {
+  switch (profilDayaWifi) {
+    case 0: WiFi.setTxPower(WIFI_POWER_8_5dBm); break;
+    case 1: WiFi.setTxPower(WIFI_POWER_11dBm); break;
+    case 2: WiFi.setTxPower(WIFI_POWER_15dBm); break;
+    default: WiFi.setTxPower(WIFI_POWER_19_5dBm); break;
+  }
+}
+static const char *namaDayaWifi() {
+  static const char *NAMA[] = {"8.5", "11", "15", "19.5"};
+  return NAMA[profilDayaWifi < 4 ? profilDayaWifi : 0];
+}
+
 static bool cfgLengkap() {
   return !strncmp(cfg.server, "http", 4) && cfg.anon[0] && strlen(cfg.alat) == 8 && cfg.adaKunci;
 }
@@ -78,6 +95,9 @@ static void muatPengaturan() {
   pref.getString("alat", cfg.alat, sizeof cfg.alat);
   cfg.adaKunci = pref.getBytes("kunci", cfg.kunci, 32) == 32;
   pref.getString("pesan", cfg.pesan, sizeof cfg.pesan);
+  profilDayaWifi = pref.getUChar("wifi_tx", profilDayaWifi);
+  if (profilDayaWifi > 3) profilDayaWifi = 0;
+  wifiHemat = pref.getBool("wifi_sleep", true);
   pref.end();
   size_t n = strlen(cfg.server);
   while (n && cfg.server[n - 1] == '/') cfg.server[--n] = 0;   // buang garis miring di akhir
@@ -401,56 +421,307 @@ static void perbaruiData(struct tm &t, bool adaJam) {
   xSemaphoreGive(kunciData);
 }
 
-// ---------------- mode pengaturan (portal WiFi) ----------------
+// ---------------- mode pengaturan (portal WiFi non-blocking) ----------------
+// Parameter harus hidup selama portal berjalan. Versi sebelumnya memakai variabel lokal
+// dan startConfigPortal() blocking, sehingga USB Serial tidak responsif saat AP aktif.
+static WiFiManager wmPortal;
+static WiFiManagerParameter pServer("server", "Alamat server (https://xxxx.supabase.co)", "", sizeof cfg.server - 1);
+static WiFiManagerParameter pAnon("anon", "Kunci anon / publishable", "", sizeof cfg.anon - 1);
+static WiFiManagerParameter pAlat("alat", "ID alat (8 karakter)", "", 8);
+static WiFiManagerParameter pKunci("kunci", "Kunci alat (64 hex; kosong = tidak berubah)", "", 64);
+static WiFiManagerParameter pPesan("pesan", "Pesan layar, pisahkan dengan |", "", sizeof cfg.pesan - 1);
+static bool portalAktif = false, portalSimpan = false, portalDisiapkan = false;
+static uint32_t portalMulai = 0;
+
+static void tutupPortal() {
+  if (!portalAktif) return;
+  wmPortal.stopConfigPortal();
+  portalAktif = false;
+  portalSimpan = false;
+  wifiDipakai = wmPortal.getWiFiIsSaved();
+  if (wifiDipakai) {
+    WiFi.mode(WIFI_STA);
+    terapkanDayaWifi();
+    WiFi.setSleep(wifiHemat);
+    WiFi.begin();
+  } else {
+    WiFi.mode(WIFI_OFF);
+  }
+  bacaSsidTersimpan();
+  if (hJaringan) vTaskResume(hJaringan);
+  if (layar) layar->siaga();
+  Serial.println("[portal] ditutup; USB Serial tetap aktif");
+}
+
 static void bukaPortal() {
-  if (hJaringan) vTaskSuspend(hJaringan);   // jangan kirim apa pun selama WiFi diatur ulang
+  if (portalAktif) return;
+  if (hJaringan) vTaskSuspend(hJaringan);
   buzzer(false);
   char ap[24];
   snprintf(ap, sizeof ap, "Cikaracak-%04X", (unsigned)(ESP.getEfuseMac() & 0xFFFF));
   layarInfo("MODE PENGATURAN", (String("WiFi: ") + ap).c_str(), "Sandi: " SANDI_PORTAL,
-            "Buka 192.168.4.1", "Pilih WiFi 2.4 GHz (bukan 5G). Batas 5 menit.");
-  WiFiManager wm;
-  // Hanya menu WiFi & Keluar: menu "Update" (ganti firmware lewat udara) sengaja disembunyikan.
-  std::vector<const char *> menu = {"wifi", "exit"};
-  wm.setMenu(menu);
-  wm.setRemoveDuplicateAPs(true);
-  wm.setMinimumSignalQuality(15);
-#if WIFI_DAYA_RENDAH
-  wm.setAPCallback([](WiFiManager *) { WiFi.setTxPower(WIFI_POWER_8_5dBm); });
-#endif
-  char kunciHex[65] = "";
-  WiFiManagerParameter pServer("server", "Alamat server, boleh kosong untuk mode demo (https://xxxx.supabase.co)", cfg.server, sizeof cfg.server - 1);
-  WiFiManagerParameter pAnon("anon", "Kunci anon / publishable", cfg.anon, sizeof cfg.anon - 1);
-  WiFiManagerParameter pAlat("alat", "ID alat (8 karakter)", cfg.alat, 8);
-  WiFiManagerParameter pKunci("kunci", "Kunci alat (64 karakter; kosongkan bila tidak diganti)", kunciHex, 64);
-  WiFiManagerParameter pPesan("pesan", "Pesan layar, pisahkan dengan |", data.pesan, sizeof cfg.pesan - 1);
-  wm.addParameter(&pServer); wm.addParameter(&pAnon); wm.addParameter(&pAlat); wm.addParameter(&pKunci); wm.addParameter(&pPesan);
-  bool simpan = false;
-  wm.setSaveParamsCallback([&]() { simpan = true; });
-  wm.setSaveConfigCallback([&]() { simpan = true; });
-  wm.setTitle("Cikaracak Hadir");
-  wm.setConfigPortalTimeout(300);
-  wm.startConfigPortal(ap, SANDI_PORTAL);
-  if (simpan) {
+            "Buka 192.168.4.1", "USB Serial tetap aktif. Batas 5 menit.");
+  if (!portalDisiapkan) {
+    std::vector<const char *> menu = {"wifi", "exit"};
+    wmPortal.setMenu(menu);
+    wmPortal.setRemoveDuplicateAPs(true);
+    wmPortal.setMinimumSignalQuality(15);
+    wmPortal.setConfigPortalBlocking(false);
+    wmPortal.setAPCallback([](WiFiManager *) { terapkanDayaWifi(); });
+    wmPortal.setSaveParamsCallback([]() { portalSimpan = true; });
+    wmPortal.setSaveConfigCallback([]() { portalSimpan = true; });
+    wmPortal.setTitle("Cikaracak Hadir");
+    wmPortal.addParameter(&pServer);
+    wmPortal.addParameter(&pAnon);
+    wmPortal.addParameter(&pAlat);
+    wmPortal.addParameter(&pKunci);
+    wmPortal.addParameter(&pPesan);
+    portalDisiapkan = true;
+  }
+  pServer.setValue(cfg.server, sizeof cfg.server - 1);
+  pAnon.setValue(cfg.anon, sizeof cfg.anon - 1);
+  pAlat.setValue(cfg.alat, 8);
+  pKunci.setValue("", 64); // kunci rahasia jangan pernah tampil di form
+  pPesan.setValue(cfg.pesan, sizeof cfg.pesan - 1);
+  portalSimpan = false;
+  portalMulai = millis();
+  portalAktif = true;
+  // Non-blocking: wmPortal.process() dipanggil setiap iterasi loop.
+  wmPortal.startConfigPortal(ap, SANDI_PORTAL);
+  Serial.printf("[portal] aktif: %s | http://192.168.4.1 | ketik 'help'\n", ap);
+}
+
+static void prosesPortal() {
+  if (!portalAktif) return;
+  wmPortal.process();
+  if (portalSimpan) {
+    // Menyimpan dari thread loop yang sama, bukan dari callback HTTP.
     pref.begin("ckhadir", false);
     pref.putString("server", pServer.getValue());
     pref.putString("anon", pAnon.getValue());
     char alat[9]; snprintf(alat, sizeof alat, "%s", pAlat.getValue());
-    for (char *p = alat; *p; p++) *p = (char)toupper(*p);
+    for (char *p = alat; *p; p++) *p = (char)toupper((unsigned char)*p);
     pref.putString("alat", alat);
     uint8_t k[32];
-    if (ck::dariHex(pKunci.getValue(), k, 32)) pref.putBytes("kunci", k, 32);
+    if (pKunci.getValue()[0]) {
+      if (ck::dariHex(pKunci.getValue(), k, 32)) pref.putBytes("kunci", k, 32);
+      else Serial.println("[portal] kunci hex tidak sah; kunci lama dipertahankan");
+    }
     pref.putString("pesan", pPesan.getValue());
     pref.end();
-    layarInfo("TERSIMPAN", "Alat dinyalakan", "ulang...", "");
-    delay(1500);
+    Serial.println("[portal] pengaturan disimpan; mulai ulang");
+    delay(200);
     ESP.restart();
   }
-  // Ditutup / habis waktu tanpa menyimpan: lanjut seperti biasa (mode demo bila server belum diatur).
-  wifiDipakai = wm.getWiFiIsSaved();
-  if (wifiDipakai) { WiFi.mode(WIFI_STA); WiFi.begin(); }
-  else WiFi.mode(WIFI_OFF);   // belum ada WiFi tersimpan: radio dimatikan, tidak memancar sama sekali
-  if (hJaringan) vTaskResume(hJaringan);
+  if (!wmPortal.getConfigPortalActive() || millis() - portalMulai >= 300000UL) {
+    Serial.println("[portal] keluar / batas 5 menit");
+    tutupPortal();
+  }
+}
+
+// ---------------- konfigurasi & diagnostik lewat USB Serial ----------------
+// Perintah tidak di-echo (sandi dan kunci tidak dicetak lagi). Serial CDC ESP32-C3
+// berjalan di USB-C bawaan papan; kabel SPI/perangkat tidak menghabiskan port ini.
+static bool pindaiWifiAktif = false;
+static char barisSerial[512];
+static size_t panjangSerial = 0;
+static bool serialTerlaluPanjang = false;
+
+static void bantuanSerial() {
+  Serial.println(F("\n--- CIKARACAK USB SERIAL 115200 ---"));
+  Serial.println(F("help                       : daftar perintah"));
+  Serial.println(F("status                     : jaringan, RSSI, pin, heap, antrean"));
+  Serial.println(F("wifi scan                  : cari SSID 2,4 GHz + RSSI"));
+  Serial.println(F("wifi set NAMA|SANDI        : simpan WiFi & restart (boleh spasi)"));
+  Serial.println(F("wifi reconnect             : sambung ulang"));
+  Serial.println(F("wifi forget                : hapus HANYA WiFi, bukan kunci/antrean"));
+  Serial.println(F("wifi tx 8.5|11|15|19.5     : profil daya pancar (dBm)"));
+  Serial.println(F("wifi sleep on|off          : hemat daya modem"));
+  Serial.println(F("config show                : cek konfigurasi (rahasia disamarkan)"));
+  Serial.println(F("config server https://...  : alamat Supabase"));
+  Serial.println(F("config anon NILAI          : publishable/anon key"));
+  Serial.println(F("config id XXXXXXXX         : ID alat 8 karakter"));
+  Serial.println(F("config key 64_HEX          : kunci alat 32 byte (64 hex)"));
+  Serial.println(F("config message PESAN      : pesan layar; pemisah |"));
+  Serial.println(F("portal                     : buka portal 192.168.4.1"));
+  Serial.println(F("portal off                 : tutup portal"));
+  Serial.println(F("reboot                     : mulai ulang alat"));
+  Serial.println(F("CATATAN: Jangan bagikan log/riwayat perintah berisi rahasia."));
+}
+static void statusSerial() {
+  Serial.printf("[status] %s %s | uptime=%lus heap=%u antrean=%u\n",
+                PAPAN, VERSI, (unsigned long)(millis() / 1000),
+                (unsigned)ESP.getFreeHeap(), (unsigned)jumlahAntrean);
+  Serial.printf("[status] wifi=%d ssid=\"%s\" IP=%s\n", (int)WiFi.status(),
+                ssidTersimpan, WiFi.localIP().toString().c_str());
+  Serial.printf("[status] RSSI=%d dBm kanal=%d BSSID=%s putus=%u (%s)\n",
+                WiFi.status() == WL_CONNECTED ? WiFi.RSSI() : 0, WiFi.channel(),
+                WiFi.status() == WL_CONNECTED ? WiFi.BSSIDstr().c_str() : "-",
+                (unsigned)alasanPutus, artiAlasan(alasanPutus));
+  Serial.printf("[status] TX=%s dBm sleep=%s portal=%s server=%s waktu=%s\n",
+                namaDayaWifi(), wifiHemat ? "ON" : "OFF",
+                portalAktif ? "ON" : "OFF", serverOk ? "OK" : "BELUM",
+                jamSiap() ? "OK" : "BELUM");
+}
+static void konfigurasiSerial() {
+  Serial.printf("[config] server=%s\n", cfg.server[0] ? cfg.server : "(kosong)");
+  Serial.printf("[config] id=%s anon=%s kunci=%s pesan=%s\n",
+                cfg.alat[0] ? cfg.alat : "(kosong)",
+                cfg.anon[0] ? "(tersimpan; disembunyikan)" : "(kosong)",
+                cfg.adaKunci ? "(tersimpan; disembunyikan)" : "(kosong)",
+                cfg.pesan[0] ? "(tersimpan)" : "(kosong)");
+}
+static void hasilPindaiWifi() {
+  if (!pindaiWifiAktif) return;
+  int16_t n = WiFi.scanComplete();
+  if (n == WIFI_SCAN_RUNNING) return;
+  pindaiWifiAktif = false;
+  if (n < 0) Serial.printf("[scan] gagal: %d\n", (int)n);
+  else {
+    Serial.printf("[scan] ditemukan %d jaringan 2,4 GHz:\n", (int)n);
+    for (int16_t i = 0; i < n; i++) {
+      Serial.printf("  %2d. RSSI %4d dBm CH %2d %-5s %s\n", (int)i + 1,
+                    WiFi.RSSI(i), WiFi.channel(i),
+                    WiFi.encryptionType(i) == WIFI_AUTH_OPEN ? "OPEN" : "LOCK",
+                    WiFi.SSID(i).c_str());
+    }
+  }
+  WiFi.scanDelete();
+  if (!wifiDipakai && !portalAktif) WiFi.mode(WIFI_OFF);
+}
+static void perintahSerial(String baris) {
+  baris.trim();
+  if (!baris.length()) return;
+  if (baris == "help" || baris == "?") { bantuanSerial(); return; }
+  if (baris == "status") { statusSerial(); return; }
+  if (baris == "config show") { konfigurasiSerial(); return; }
+  if (baris == "reboot") { Serial.println("[serial] restart"); delay(150); ESP.restart(); }
+  if (baris == "portal") { bukaPortal(); return; }
+  if (baris == "portal off") { tutupPortal(); return; }
+  if (baris == "wifi scan") {
+    if (portalAktif || pindaiWifiAktif) { Serial.println("[scan] portal / pindai masih aktif"); return; }
+    if (WiFi.getMode() == WIFI_OFF) WiFi.mode(WIFI_STA);
+    if (WiFi.scanNetworks(true, false) == WIFI_SCAN_FAILED) {
+      Serial.println("[scan] gagal memulai");
+      if (!wifiDipakai) WiFi.mode(WIFI_OFF);
+    } else {
+      pindaiWifiAktif = true;
+      Serial.println("[scan] sedang memindai...");
+    }
+    return;
+  }
+  if (baris.startsWith("wifi set ")) {
+    String nilai = baris.substring(9);
+    int potong = nilai.indexOf('|');
+    if (potong <= 0) { Serial.println("[wifi] format: wifi set NAMA|SANDI"); return; }
+    String ssid = nilai.substring(0, potong), sandi = nilai.substring(potong + 1);
+    ssid.trim();
+    if (ssid.length() == 0 || ssid.length() > 32 ||
+        (sandi.length() != 0 && (sandi.length() < 8 || sandi.length() > 63))) {
+      Serial.println("[wifi] SSID 1..32; sandi kosong (OPEN) atau 8..63 karakter");
+      return;
+    }
+    WiFi.mode(WIFI_STA);
+    WiFi.persistent(true);
+    WiFi.begin(ssid.c_str(), sandi.c_str());
+    WiFi.persistent(false);
+    Serial.println("[wifi] kredensial disimpan (sandi disembunyikan); mulai ulang");
+    delay(400);
+    ESP.restart();
+    return;
+  }
+  if (baris == "wifi forget") {
+    // Jangan reset Preferences atau LittleFS (kunci alat dan antrean offline tetap ada).
+    WiFi.disconnect(true, true);
+    Serial.println("[wifi] kredensial WiFi dihapus; mulai ulang");
+    delay(200);
+    ESP.restart();
+    return;
+  }
+  if (baris == "wifi reconnect") {
+    if (portalAktif || !wifiDipakai) { Serial.println("[wifi] tutup portal / atur SSID dulu"); return; }
+    WiFi.disconnect(false, false);
+    WiFi.begin();
+    cobaSambungBerikut = millis() + 10000;
+    jedaSambung = 10000;
+    Serial.println("[wifi] menghubungkan ulang...");
+    return;
+  }
+  if (baris.startsWith("wifi tx ")) {
+    String nilai = baris.substring(8); nilai.trim();
+    if (nilai == "8.5") profilDayaWifi = 0;
+    else if (nilai == "11") profilDayaWifi = 1;
+    else if (nilai == "15") profilDayaWifi = 2;
+    else if (nilai == "19.5") profilDayaWifi = 3;
+    else { Serial.println("[wifi] pilihan: 8.5, 11, 15, 19.5"); return; }
+    pref.begin("ckhadir", false); pref.putUChar("wifi_tx", profilDayaWifi); pref.end();
+    if (WiFi.getMode() != WIFI_OFF) terapkanDayaWifi();
+    Serial.printf("[wifi] daya TX maksimum %s dBm (tersimpan)\n", namaDayaWifi());
+    return;
+  }
+  if (baris.startsWith("wifi sleep ")) {
+    String nilai = baris.substring(11); nilai.trim();
+    if (nilai != "on" && nilai != "off") { Serial.println("[wifi] pilihan: on atau off"); return; }
+    wifiHemat = nilai == "on";
+    pref.begin("ckhadir", false); pref.putBool("wifi_sleep", wifiHemat); pref.end();
+    if (WiFi.getMode() != WIFI_OFF) WiFi.setSleep(wifiHemat);
+    Serial.printf("[wifi] modem sleep %s (tersimpan)\n", wifiHemat ? "ON" : "OFF");
+    return;
+  }
+  if (baris.startsWith("config ")) {
+    int mulai = baris.indexOf(' ', 7);
+    if (mulai < 0) { Serial.println("[config] format: config server|anon|id|key|message NILAI"); return; }
+    String nama = baris.substring(7, mulai), nilai = baris.substring(mulai + 1);
+    nilai.trim();
+    if (!nilai.length()) { Serial.println("[config] nilai kosong ditolak; data lama aman"); return; }
+    if (nama == "server") {
+      if (!nilai.startsWith("https://") || nilai.length() >= sizeof cfg.server) {
+        Serial.println("[config] harus URL https:// yang valid dan singkat");
+        return;
+      }
+    } else if (nama == "anon") {
+      if (nilai.length() >= sizeof cfg.anon) { Serial.println("[config] kunci terlalu panjang"); return; }
+    } else if (nama == "id") {
+      if (nilai.length() != 8) { Serial.println("[config] ID harus 8 karakter"); return; }
+      nilai.toUpperCase();
+      for (size_t i = 0; i < nilai.length(); i++) {
+        if (!isalnum((unsigned char)nilai[i])) { Serial.println("[config] ID hanya huruf dan angka"); return; }
+      }
+    } else if (nama == "key") {
+      uint8_t k[32];
+      if (!ck::dariHex(nilai.c_str(), k, 32)) { Serial.println("[config] kunci harus 64 digit heksadesimal"); return; }
+      pref.begin("ckhadir", false); pref.putBytes("kunci", k, sizeof k); pref.end();
+      Serial.println("[config] kunci disimpan (disembunyikan); reboot...");
+      delay(150); ESP.restart(); return;
+    } else if (nama == "message") {
+      if (nilai.length() >= sizeof cfg.pesan) { Serial.println("[config] pesan terlalu panjang"); return; }
+    } else {
+      Serial.println("[config] pilihan: server, anon, id, key, message");
+      return;
+    }
+    const char *prefKey = nama == "message" ? "pesan" : nama == "id" ? "alat" : nama.c_str();
+    pref.begin("ckhadir", false); pref.putString(prefKey, nilai); pref.end();
+    Serial.printf("[config] %s tersimpan (nilai rahasia tidak dicetak); reboot...\n", nama.c_str());
+    delay(150); ESP.restart();
+    return;
+  }
+  Serial.println("[serial] perintah tidak dikenal. Ketik help");
+}
+static void bacaSerial() {
+  uint16_t banyak = 0;
+  while (Serial.available() && banyak++ < 128) {
+    int ch = Serial.read();
+    if (ch == '\r') continue;
+    if (ch == '\n') {
+      if (serialTerlaluPanjang) Serial.println("[serial] baris >511 byte; diabaikan");
+      else { barisSerial[panjangSerial] = 0; perintahSerial(String(barisSerial)); }
+      panjangSerial = 0;
+      serialTerlaluPanjang = false;
+    } else if (!serialTerlaluPanjang) {
+      if (panjangSerial + 1 < sizeof barisSerial) barisSerial[panjangSerial++] = (char)ch;
+      else serialTerlaluPanjang = true;
+    }
+  }
 }
 
 // ---------------- setup & loop ----------------
@@ -527,6 +798,7 @@ void setup() {
   Serial.begin(115200);
   delay(200);
   Serial.printf("\n# Cikaracak Hadir %s (%s)\n", VERSI, PAPAN);
+  Serial.println("# USB Serial tersedia: ketik help + Enter");
 
   // Kanvas 110 KB dipesan paling awal, sebelum WiFi dan TLS memecah memori.
   kanvas = new GFXcanvas16(TFT_TINGGI, TFT_LEBAR);
@@ -562,9 +834,7 @@ void setup() {
   // WiFi: tanpa pengaturan -> langsung portal. Dengan pengaturan -> coba sambung, bila gagal tetap jalan offline.
   WiFi.onEvent(peristiwaWifi);
   WiFi.mode(WIFI_STA);
-#if WIFI_DAYA_RENDAH
-  WiFi.setTxPower(WIFI_POWER_8_5dBm);
-#endif
+  terapkanDayaWifi();
   bacaSsidTersimpan();
   Serial.printf("# WiFi tersimpan: %s\n", ssidTersimpan[0] ? ssidTersimpan : "(belum ada)");
   {
@@ -581,11 +851,9 @@ void setup() {
   if (wifiDipakai) {
     // Hemat daya modem: radio hanya bangun saat perlu, sehingga tidak mengganggu WiFi HP di dekatnya.
     // Sambung ulang diatur sendiri dengan jeda bertambah (bukan memindai terus-menerus).
-    WiFi.setSleep(true);
+    WiFi.setSleep(wifiHemat);
     WiFi.setAutoReconnect(false);
-#if WIFI_DAYA_RENDAH
-    WiFi.setTxPower(WIFI_POWER_8_5dBm);
-#endif
+    terapkanDayaWifi();
   }
   configTzTime(ZONA_WAKTU, "id.pool.ntp.org", "pool.ntp.org", "time.google.com");
 
@@ -595,6 +863,10 @@ void setup() {
 }
 
 void loop() {
+  prosesPortal();
+  bacaSerial();
+  hasilPindaiWifi();
+  if (portalAktif) { delay(1); return; }  // layar portal tidak ditimpa animasi siaga
   uint32_t kini = millis();
 
   // tahan BOOT 3 detik -> pengaturan
@@ -605,6 +877,7 @@ void loop() {
     tekanMulai = 0;
   }
 
+  if (portalAktif) { delay(1); return; }
   if (mintaNtp) { mintaNtp = false; configTzTime(ZONA_WAKTU, "id.pool.ntp.org", "pool.ntp.org", "time.google.com"); }
 
   // RC522 kadang "hang" karena gangguan listrik: periksa tiap 30 detik
@@ -623,7 +896,7 @@ void loop() {
   }
 
   // WiFi putus: coba sambung ulang 10 detik, 20, 40, … paling lama tiap 2 menit
-  if (wifiDipakai) {
+  if (wifiDipakai && !pindaiWifiAktif) {
     if (WiFi.status() == WL_CONNECTED) jedaSambung = 10000;
     else if (kini > cobaSambungBerikut) {
       WiFi.reconnect();
