@@ -32,6 +32,7 @@ psql -q -v ON_ERROR_STOP=1 -f "$ROOT/tools/supabase/uji_rls.sql"
 psql -q -v ON_ERROR_STOP=1 -f "$ROOT/tools/supabase/uji_presensi.sql"
 psql -q -v ON_ERROR_STOP=1 -f "$ROOT/tools/supabase/uji_pegawai.sql"
 psql -q -v ON_ERROR_STOP=1 -f "$ROOT/tools/supabase/uji_dasbor.sql"
+psql -q -v ON_ERROR_STOP=1 -f "$ROOT/tools/supabase/uji_core.sql"
 
 # Uji naik versi: migrasi pegawai dijalankan di atas data lama, seperti proyek Supabase yang sudah berjalan
 # (operator dari demo.sql dengan kolom piket lama, kelas, siswa, penugasan mengajar, kuis).
@@ -40,7 +41,7 @@ psql -q -v ON_ERROR_STOP=1 -c "drop database if exists uji_naik" -c "create data
 export PGDATABASE=uji_naik
 psql -q -v ON_ERROR_STOP=1 -f "$ROOT/tools/supabase/stub_auth.sql"
 for f in "$ROOT"/supabase/migrations/*.sql; do
-  case "$(basename "$f")" in 20261110000001*|20261110000002*|20261024000003*) continue;; esac
+  case "$(basename "$f")" in 20261110000001*|20261110000002*|20261110000003*|20261024000003*) continue;; esac
   psql -q -v ON_ERROR_STOP=1 -f "$f"
 done
 psql -q -v ON_ERROR_STOP=1 <<'SQL'
@@ -53,6 +54,7 @@ insert into mengajar (guru_id, rombel_id, mapel, sekolah_id) values ('00000000-0
 insert into kuis (sekolah_id, guru_id, rombel_id, topik) values ('10000000-0000-0000-0000-00000000aaaa', '00000000-0000-0000-0000-00000000aaaa', '20000000-0000-0000-0000-00000000aaaa', 'Kuis lama');
 SQL
 psql -q -v ON_ERROR_STOP=1 -f "$ROOT/supabase/migrations/20261110000001_pegawai.sql"
+psql -q -v ON_ERROR_STOP=1 -f "$ROOT/supabase/migrations/20261110000003_core.sql"
 psql -q -v ON_ERROR_STOP=1 <<'SQL'
 \o /dev/null
 do $$ begin
@@ -65,6 +67,7 @@ set local request.jwt.claim.sub = '00000000-0000-0000-0000-00000000aaaa';
 do $$ begin
   assert public.saya_admin() and public.sekolah_saya() = '10000000-0000-0000-0000-00000000aaaa', 'Operator lama tetap admin';
   assert (select count(*) from kuis) = 1 and (select count(*) from siswa) = 1, 'Kuis dan siswa lama tetap terbaca';
+  assert (select count(*) from public.wali_keluarga) = 0 and (select count(*) from public.foto_siswa) = 0, 'Fondasi Core baru tidak merusak data lama';
 end $$;
 rollback;
 SQL
