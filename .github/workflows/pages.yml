@@ -1,5 +1,5 @@
 # Publikasi demo web Cikaracak tanpa menggabungkan firmware/Android dari PR pengembangan.
-# Snapshot rilis: dashboard modular web v0.5.0 yang lulus uji browser.
+# Snapshot rilis: dashboard modular web v0.6.0 yang lulus uji browser.
 # Jika ingin versi web lebih baru, tinjau dan perbarui ref ini melalui PR terpisah.
 name: Pages - Demo Web Cikaracak
 
@@ -30,7 +30,7 @@ jobs:
       - name: Ambil snapshot web yang telah diuji
         uses: actions/checkout@v4
         with:
-          ref: 6af775bda9c35017cc6515ae743318178ee60400
+          ref: efe1be6eb72bd783ed1d8a463c76208a708ff3fc
           persist-credentials: false
 
       - name: Periksa struktur web dan berkas offline
