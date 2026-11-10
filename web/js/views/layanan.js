@@ -70,7 +70,7 @@ export function render(el) {
   const statusLogin = profil
     ? `Akun sekolah: <b>${esc(profil.nama)}</b> · ${esc(profil.sekolah?.nama || 'Sekolah terhubung')}`
     : 'Belum masuk ke server sekolah. Asesmen tetap bisa digunakan secara offline.';
-  const tugas = (profil?.tugas || []).map(t => t.jenis).filter(Boolean);
+  const tugas = [...new Set((profil?.tugas || []).map(t => t.jenis).filter(Boolean))];
   el.innerHTML = `
     <div class="hero clay modul-hero">
       <div class="copy">
