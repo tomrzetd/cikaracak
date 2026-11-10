@@ -858,7 +858,7 @@ void setup() {
   configTzTime(ZONA_WAKTU, "id.pool.ntp.org", "pool.ntp.org", "time.google.com");
 
   xTaskCreate(tugasJaringan, "jaringan", 12288, nullptr, 1, &hJaringan);
-  layar->siaga();
+  if (!portalAktif) layar->siaga();  // jangan menimpa layar MODE PENGATURAN saat portal non-blocking
   siagaSejak = millis();
 }
 
