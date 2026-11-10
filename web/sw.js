@@ -49,8 +49,13 @@ self.addEventListener('activate', e => {
     .then(() => self.clients.claim()));
 });
 
-// Utamakan salinan di perangkat; bila tidak ada, ambil dari jaringan.
+// Dokumen HTML memakai network-first agar rilis Pages baru tidak selalu terkunci
+// pada index.html lama. Aset aplikasi tetap cache-first untuk fungsi offline.
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET' || new URL(e.request.url).origin !== location.origin) return;
+  if (e.request.mode === 'navigate') {
+    e.respondWith(fetch(e.request).catch(() => caches.match('index.html')));
+    return;
+  }
   e.respondWith(caches.match(e.request, { ignoreSearch: true }).then(hit => hit || fetch(e.request)));
 });
