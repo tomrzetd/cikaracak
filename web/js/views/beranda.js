@@ -10,7 +10,7 @@ export function render(el, ctx) {
   const sapa = `<div class="hero clay">
     <div class="copy">
       <span class="pill peach" style="align-self:flex-start">${r ? esc(r.nama) : 'Belum ada kelas'}${k ? ' · ' + esc(k.topik) : ''}</span>
-      <h2>Selamat mengajar${d.guru.nama ? ', ' + esc(d.guru.nama) : ''}!</h2>
+      <h2>${d.contoh ? 'Selamat datang di Cikaracak!' : d.guru.nama ? 'Selamat mengajar, ' + esc(d.guru.nama) + '!' : 'Selamat datang di Cikaracak!'}</h2>
       <p>Pilih konsep dari CP resmi, cetak lembar jawaban, pindai dengan kamera HP, lalu dapatkan saran konsep yang perlu diulang. Semua data tersimpan di perangkat ini dan aplikasi tetap jalan tanpa internet.</p>
       <div class="row">
         ${k ? '<button class="btn utama" data-go="kuis">Isi jawaban kuis</button><button class="btn" data-go="saran">Lihat saran</button>' : '<button class="btn utama" data-go="kuis">Buat kuis pertama</button>'}
