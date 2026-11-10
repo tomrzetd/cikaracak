@@ -71,6 +71,13 @@ def jalan(page, nama):
     page.click('#v-layanan [data-modul=asesmen] [data-go=kuis]')
     expect(page.locator('#v-kuis')).to_be_visible()
     # Pustaka Demo (offline, fiktif): katalog, pinjam-kembali, inventaris dan laporan.
+    page.click('#v-layanan [data-modul=hadir] [data-go=dasborPublik]')
+    expect(page.locator('#v-dasborPublik')).to_contain_text('Pratinjau Dasbor Sekolah')
+    expect(page.locator('#v-dasborPublik')).to_contain_text('SIMULASI LOKAL')
+    expect(page.locator('#v-dasborPublik svg.grafik').first).to_be_visible()
+    assert page.locator('#v-dasborPublik #dbSumber').count() == 0, 'pratinjau publik tidak boleh menawarkan data asli'
+    page.select_option('#v-dasborPublik #dbHari', '7')
+    expect(page.locator('#v-dasborPublik')).to_contain_text('7 hari terakhir')
     page.click('.nav[data-v=pustaka]')
     expect(page.locator('#v-pustaka')).to_contain_text('SIMULASI LOKAL')
     expect(page.locator('#v-pustaka .pustaka-stat')).to_have_count(5)
