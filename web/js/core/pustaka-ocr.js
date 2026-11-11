@@ -32,10 +32,19 @@ function pasangPustakaScript(){
   if(persiapan)return persiapan;
   persiapan=new Promise((resolve,reject)=>{
     const script=document.createElement('script');
+    let selesai=false;
+    const timer=setTimeout(()=>akhir(new Error('Memuat mesin OCR terlalu lama. Periksa sambungan internet atau pemblokir CDN.')),20000);
+    const akhir=(error)=>{
+      if(selesai)return;
+      selesai=true;clearTimeout(timer);
+      if(error){script.remove();reject(error);}
+      else resolve();
+    };
     script.src=CDN;
     script.crossOrigin='anonymous';
-    script.onload=()=>window.Tesseract?.createWorker?resolve():reject(new Error('Engine OCR gagal dimuat'));
-    script.onerror=()=>reject(new Error('Mesin OCR PWA memerlukan internet saat penggunaan pertama. Gunakan input manual bila offline.'));
+    script.onload=()=>window.Tesseract?.createWorker
+      ? akhir() : akhir(new Error('Pustaka OCR gagal diinisialisasi; muat ulang dan coba lagi.'));
+    script.onerror=()=>akhir(new Error('Mesin OCR tidak dapat dimuat dari CDN. Pastikan online dan tidak ada pemblokir skrip. Pengisian manual tetap tersedia.'));
     document.head.appendChild(script);
   }).catch(e=>{persiapan=null;throw e;});
   return persiapan;
