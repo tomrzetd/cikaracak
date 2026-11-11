@@ -1,6 +1,6 @@
 // Service worker: menyimpan seluruh aplikasi di perangkat agar tetap berjalan tanpa internet.
 // Naikkan VERSI setiap kali ada file yang berubah; tools/cek-web.js memeriksa daftar ini lengkap.
-const VERSI = 'cikaracak-0.6.0';
+const VERSI = 'cikaracak-0.7.0';
 const FILE = [
   './',
   'index.html',
@@ -22,6 +22,8 @@ const FILE = [
   'js/core/omr.js',
   'js/core/tanda.js',
   'js/core/pustaka-demo.js',
+  'js/core/pustaka-label.js',
+  'js/core/pustaka-ocr.js',
   'js/core/dasbor-fiktif.js',
   'js/server/supabase.js',
   'js/views/bersama.js',
@@ -39,6 +41,7 @@ const FILE = [
   'js/views/presensi-demo.js',
   'js/views/layanan.js',
   'js/views/pustaka.js',
+  'js/views/pustaka-sekolah.js',
   'js/views/dasbor-publik.js',
   'js/views/pengaturan.js',
 ];
@@ -49,14 +52,15 @@ self.addEventListener('install', e => {
 
 self.addEventListener('activate', e => {
   e.waitUntil(caches.keys()
-    .then(keys => Promise.all(keys.filter(k => k !== VERSI).map(k => caches.delete(k))))
+    .then(keys => Promise.all(keys.filter(k => k.startsWith('cikaracak-') && k !== VERSI).map(k => caches.delete(k))))
     .then(() => self.clients.claim()));
 });
 
 // Dokumen HTML memakai network-first agar rilis Pages baru tidak selalu terkunci
 // pada index.html lama. Aset aplikasi tetap cache-first untuk fungsi offline.
 self.addEventListener('fetch', e => {
-  if (e.request.method !== 'GET' || new URL(e.request.url).origin !== location.origin) return;
+  if (e.request.method !== 'GET' || new URL(e.request.url).origin !== location.origin ||
+      !new URL(e.request.url).pathname.startsWith(new URL(self.registration.scope).pathname)) return;
   if (e.request.mode === 'navigate') {
     e.respondWith(fetch(e.request).catch(() => caches.match('index.html')));
     return;

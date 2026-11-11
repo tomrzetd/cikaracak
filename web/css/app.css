@@ -309,3 +309,28 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .
 .pustaka-terlambat:last-child { border-bottom: 0; }
 @media (max-width: 1050px) { .pustaka-stats { grid-template-columns: repeat(3,minmax(0,1fr)); } }
 @media (max-width: 600px) { .pustaka-stats { grid-template-columns: repeat(2,minmax(0,1fr)); } .pustaka-stat strong { font-size: 1.6rem; } }
+
+
+/* ---------- Katalog sekolah / OCR / label inventaris v0.7 ---------- */
+.pustaka-video{display:block;width:min(100%,560px);max-height:420px;object-fit:contain;border-radius:14px;background:#111}
+.pustaka-ocr-mentah{margin-top:10px;color:var(--muted);font-size:.84rem}
+.pustaka-ocr-mentah pre{white-space:pre-wrap;max-height:180px;overflow:auto;background:var(--surface);padding:12px;border-radius:12px}
+.pustaka-saran{display:grid;gap:8px;margin:14px 0}
+.pustaka-saran-item{text-align:left;display:grid;gap:3px;padding:12px;border-radius:13px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.pustaka-saran-item:hover{border-color:var(--mint-ink)}
+.pustaka-saran-item small{color:var(--muted)}
+.pustaka-saran-item span{font-size:.75rem;color:var(--mint-ink);font-weight:800}
+.pustaka-label-preview{max-width:360px;background:#fff;padding:12px;margin:12px 0;border-radius:12px}
+.label-pustaka{width:62mm;height:28mm;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:space-between;
+ box-sizing:border-box;border:1px dashed #bbb;color:#000;background:#fff;padding:1.5mm 2mm;font-family:Arial,sans-serif}
+.label-pustaka strong{font-size:8pt;line-height:1.05;text-align:center;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.label-pustaka span{font-size:6pt;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.label-pustaka svg.pustaka-barcode{height:16mm;width:100%;display:block}
+.pustaka-kertas-label{display:grid;grid-template-columns:repeat(3,62mm);grid-auto-rows:28mm;column-gap:3mm;row-gap:1mm;align-content:start;justify-content:start;max-width:204mm}
+#cetak .pustaka-kertas-label .label-pustaka svg{width:100%;height:16mm}
+@media print{
+  @page{size:A4 portrait;margin:7mm}
+  #cetak .pustaka-kertas-label{display:grid;grid-template-columns:repeat(3,62mm);gap:1mm 3mm}
+  #cetak .pustaka-kertas-label .label-pustaka{break-inside:avoid;page-break-inside:avoid}
+  #cetak .pustaka-kertas-label .label-pustaka svg{width:100%;height:16mm}
+}

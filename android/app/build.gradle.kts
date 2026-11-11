@@ -50,6 +50,9 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("androidx.activity:activity-ktx:1.9.3")
     implementation("androidx.webkit:webkit:1.12.1")
+    // OCR dan pembaca label di perangkat; model bundled tidak mengunggah foto ke layanan pihak ketiga.
+    implementation("com.google.mlkit:text-recognition:16.0.1")
+    implementation("com.google.mlkit:barcode-scanning:17.3.0")
 }
 
 // Salin aplikasi web (../web) ke aset sebelum setiap build, sehingga APK selalu memakai versi web terbaru.
