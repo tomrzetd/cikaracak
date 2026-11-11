@@ -95,7 +95,7 @@ do $$ begin
     perform public.pustaka_tambah_eksemplar(current_setting('uji.pustaka_judul')::uuid);
     raise exception 'GAGAL: sekolah lain membuat copy';
   exception when invalid_parameter_value then null; end;
-end $;
+end $$;
 rollback;
 \o
 \echo 'Uji pustaka katalog, label, akses lintas sekolah lulus.'
