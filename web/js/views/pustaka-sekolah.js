@@ -148,6 +148,16 @@ export function render(el){
    if(video&&video.srcObject!==st.kamera){video.srcObject=st.kamera;video.play().catch(()=>{});}
  }
 }
+// Router Cikaracak mempertahankan nilai input saat render ulang. Sinkronkan DOM
+// secara eksplisit setelah operator memilih saran OCR supaya nilai lama tidak
+// dikembalikan di atas draft baru oleh mekanisme preservasi input global.
+function selaraskanForm(el){
+ const fields={pbJudul:'judul',pbPenulis:'penulis',pbPenerbit:'penerbit',pbIsbn:'isbn'};
+ for(const [id,k] of Object.entries(fields)){
+   const input=el.querySelector('#'+id);
+   if(input) input.value=st.draft[k]||'';
+ }
+}
 function hentikanKamera(){
  if(st.kamera){st.kamera.getTracks().forEach(t=>t.stop());st.kamera=null;}
 }
@@ -248,6 +258,7 @@ export function pasang(el,ctx){
      const j=await srv.rpc('pustaka_terima_buku',{p_judul:d.judul,p_penulis:d.penulis,
        p_penerbit:d.penerbit,p_isbn:d.isbn||null,p_sumber:d.sumber||'manual'});
      st.baru={kode:j.kode,judul:d.judul};st.draft=baruDraft();st.saran=[];st.teksOcr='';st.usulanOcr=null;st.foto=null;st.statusOcr='';
+     selaraskanForm(el);
      st.pesan='Buku tercatat. '+(j.judul_baru?'Judul baru dan satu eksemplar dibuat.':'ISBN sudah ada; satu eksemplar baru ditambahkan tanpa mengubah metadata sebelumnya.')+
        ' Cetak barcode dan tempel pada buku fisik.';
      await muat(ctx,{profil:false});
@@ -258,7 +269,7 @@ export function pasang(el,ctx){
    const m=e.target.closest('[data-pb-saran]');
    if(m){const a=st.saran[Number(m.dataset.pbSaran)];if(!a)return;
      st.draft={...st.draft,...a,sumber:'openlibrary'};
-     ctx.render();return;}
+     selaraskanForm(el);ctx.render();return;}
    const copy=e.target.closest('[data-pb-copy]');
    if(copy){
      try{
@@ -285,6 +296,7 @@ export function pasang(el,ctx){
            isbn:h.isbn||st.draft.isbn,
            sumber:'ocr'};
          st.statusOcr='Data OCR sudah dipindahkan. Periksa kembali judul dan penerbit sebelum menyimpan.';
+         selaraskanForm(el);
          ctx.render();
          document.getElementById('pbJudul')?.focus();
          break;
