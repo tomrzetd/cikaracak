@@ -85,11 +85,15 @@ do $$ begin
 end $$;
 rollback;
 
--- Sekolah lain tidak boleh menambah eksemplar ke judul sekolah A.
+-- Pustakawan SEKOLAH B tetap tidak boleh menambah eksemplar milik sekolah A.
+insert into public.tugas (sekolah_id,pengguna_id,jenis) values
+  ('10000000-0000-0000-0000-000000000002',
+   '00000000-0000-0000-0000-0000000000a4', 'pustakawan');
 begin;
 set local role authenticated;
 set local request.jwt.claim.sub = '00000000-0000-0000-0000-0000000000a4';
 do $$ begin
+  assert public.pustaka_petugas(), 'Guru C bertugas pustaka di sekolah B';
   assert (select count(*) from public.pustaka_judul)=0, 'Isolasi sekolah lain';
   begin
     perform public.pustaka_tambah_eksemplar(current_setting('uji.pustaka_judul')::uuid);
