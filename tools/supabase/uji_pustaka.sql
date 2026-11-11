@@ -46,8 +46,11 @@ rollback;
 
 -- Pegawai TU dengan tugas pustakawan boleh menerima buku, tetapi tak boleh INSERT langsung.
 begin;
+-- Variabel uji dari proses psql sebelumnya tidak bertahan antarkoneksi.
+select set_config('uji.pustaka_tu', (select akun_id::text from public.pengguna
+   where id='30000000-0000-0000-0000-000000000003'), true);
 set local role authenticated;
-select set_config('request.jwt.claim.sub', current_setting('uji.tu'), true);
+select set_config('request.jwt.claim.sub', current_setting('uji.pustaka_tu'), true);
 do $$
 declare j jsonb;
 begin
