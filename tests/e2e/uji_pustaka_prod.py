@@ -60,13 +60,19 @@ def jalan(page):
         cetak:(judul)=>{window.__cetak=(window.__cetak||0)+1;}
       };
     })();""")
-    page.goto(URL+'#pustakaSekolah')
+    page.goto(URL+'#pustakaSekolah',wait_until='networkidle')
     expect(page.locator('#pbForm')).to_be_visible(timeout=12000)
     assert page.locator('#v-pustakaSekolah').is_visible()
     expect(page.locator('#pbJudul')).to_have_value('')
     f=io.BytesIO();Image.new('RGB',(160,100),'white').save(f,format='JPEG')
     page.locator('#pbFoto').set_input_files({'name':'sampul.jpg','mimeType':'image/jpeg','buffer':f.getvalue()})
-    expect(page.locator('.pustaka-ocr-preview img')).to_be_visible(timeout=12000)
+    try:
+        expect(page.locator('.pustaka-ocr-preview img')).to_be_visible(timeout=12000)
+    except AssertionError:
+        print('DEBUG FOTO:',page.locator('#pbOcrStatus').all_text_contents(),
+              'FILE INPUTS:',page.locator('input[type=file]').count(),
+              'VIEW:',page.locator('#v-pustakaSekolah').inner_text()[:650])
+        raise
     expect(page.locator('#pbJudul')).to_have_value('')  # OCR tidak menimpa formulir sebelum persetujuan
     page.locator('[data-pb=ocr]').click()
     expect(page.locator('.pustaka-ocr-hasil')).to_contain_text('ATLAS GEOGRAFI NUSANTARA',timeout=12000)

@@ -42,10 +42,11 @@ const pilih=(id,value,placeholder='')=>'<input id="'+id+'" value="'+txt(value)+'
 function formInput(){
  const d=st.draft;
  return '<div class="card clay"><div class="head"><div><h3>1 · Ambil foto sampul buku</h3>'+
-  '<p class="muted kecil">Foto dahulu, kemudian tekan Baca tulisan (OCR). Setelah dibaca, periksa usulan judul dan penerbit sebelum memasukkannya ke formulir.</p></div>'+
+  '<p class="muted kecil">Foto dekat dan sejajar, hindari pantulan cahaya; utamakan tulisan judul memenuhi bingkai. Tekan Baca Tulisan (OCR), lalu periksa usulan sebelum menggunakan data.</p></div>'+
   '<span class="pill sky">FOTO TETAP DI PERANGKAT</span></div>'+
   '<div class="row pustaka-ocr-actions" style="flex-wrap:wrap">'+
     '<label class="btn kecil hijau">📷 Kamera HP / pilih foto <input id="pbFoto" type="file" accept="image/*" capture="environment" hidden></label>'+
+    '<label class="btn kecil">▥ Foto barcode ISBN (belakang buku) <input id="pbIsbnFoto" type="file" accept="image/*" capture="environment" hidden></label>'+
     '<button type="button" class="btn kecil" data-pb="kamera">'+(st.kamera?'Tutup webcam':'Aktifkan webcam')+'</button>'+
     (st.kamera?'<button type="button" class="btn utama" data-pb="jepret">📸 Cekrek Foto</button>':'')+
   '</div>'+
@@ -60,10 +61,14 @@ function formInput(){
   (st.statusOcr?'<p id="pbOcrStatus" class="status" role="status" aria-live="polite">'+txt(st.statusOcr)+'</p>':'')+
   (st.usulanOcr?'<div class="pustaka-ocr-hasil">'+
     '<h4>Usulan hasil OCR — belum dimasukkan ke formulir</h4>'+
-    '<p><b>Judul:</b> '+txt(st.usulanOcr.judul||'(tidak terdeteksi)')+'</p>'+
+    '<p><b>Kualitas:</b> '+(st.usulanOcr.mutu==='baik'?'Judul cukup terbaca, tetap periksa.':st.usulanOcr.mutu==='periksa'?'Perlu pemeriksaan petugas.':'Belum yakin — jangan gunakan tanpa koreksi.')+'</p>'+
+    '<p><b>Judul:</b> '+txt(st.usulanOcr.judul||'(belum dapat ditentukan dengan yakin)')+'</p>'+
     '<p><b>Penerbit:</b> '+txt(st.usulanOcr.penerbit||'(belum terdeteksi)')+'</p>'+
     '<p><b>ISBN:</b> '+txt(st.usulanOcr.isbn||'(belum terdeteksi)')+'</p>'+
-    '<button type="button" class="btn utama" data-pb="terapkan-ocr">✓ Gunakan Data Hasil OCR</button>'+
+    (st.usulanOcr.kandidat?.length?'<div class="pustaka-kandidat-ocr"><b>Alternatif teks yang terbaca — pilih jika cocok:</b>'+
+      st.usulanOcr.kandidat.slice(0,5).map((k,i)=>'<button type="button" class="btn kecil" data-pb-kandidat="'+i+'">'+txt(k)+'</button>').join('')+'</div>':'')+
+    (st.usulanOcr.judul||st.usulanOcr.penerbit||st.usulanOcr.isbn?'<button type="button" class="btn utama" data-pb="terapkan-ocr">✓ Gunakan Data Hasil OCR</button>':
+      '<p class="muted kecil">Foto ulang dengan judul memenuhi sebagian besar bingkai, atau isi judul secara manual.</p>')+
   '</div>':'')+
   (st.teksOcr?'<details class="pustaka-ocr-mentah"><summary>Lihat teks lengkap yang terbaca</summary><pre>'+txt(st.teksOcr.slice(0,3500))+'</pre></details>':'')+
   '</div>'+
@@ -217,7 +222,7 @@ async function barcodeFoto(file,ctx){
        kode=(await det.detect(bitmap))?.[0]?.rawValue||'';}finally{bitmap.close();}
    }else throw new Error('Browser ini belum mendukung pembaca barcode kamera. Gunakan Android atau ketik kode secara manual');
    if(kodeValid(kode)){st.hasilKode=kode;toast('Barcode buku ditemukan');}
-   else if(validIsbn(kode)){st.draft.isbn=normalisasiIsbn(kode);toast('ISBN terdeteksi; cari rekomendasi buku');}
+   else if(validIsbn(kode)){st.draft.isbn=normalisasiIsbn(kode);selaraskanForm(document.getElementById('v-pustakaSekolah'));toast('ISBN terdeteksi; klik Cari rekomendasi judul & penerbit');}
    else throw new Error('Barcode tidak dikenali sebagai kode Cikaracak atau ISBN');
  }catch(e){toast(pesan(e));}
  ctx.render();
@@ -244,6 +249,7 @@ export function pasang(el,ctx){
  el.addEventListener('change',async e=>{
    if(e.target.id==='pbFoto'){const foto=e.target.files?.[0];e.target.value='';hentikanKamera();await siapFoto(foto,ctx);}
    if(e.target.id==='pbScanFile'){await barcodeFoto(e.target.files?.[0],ctx);e.target.value='';}
+   if(e.target.id==='pbIsbnFoto'){await barcodeFoto(e.target.files?.[0],ctx);e.target.value='';}
  });
  el.addEventListener('submit',async e=>{
    if(e.target.id!=='pbForm')return;
@@ -270,6 +276,14 @@ export function pasang(el,ctx){
    if(m){const a=st.saran[Number(m.dataset.pbSaran)];if(!a)return;
      st.draft={...st.draft,...a,sumber:'openlibrary'};
      selaraskanForm(el);ctx.render();return;}
+   const kandidat=e.target.closest('[data-pb-kandidat]');
+   if(kandidat){
+     const pilihan=st.usulanOcr?.kandidat?.[Number(kandidat.dataset.pbKandidat)];
+     if(!pilihan)return;
+     st.usulanOcr={...st.usulanOcr,judul:pilihan,mutu:'periksa'};
+     st.statusOcr='Judul dipilih dari hasil OCR. Bandingkan dengan sampul sebelum digunakan.';
+     ctx.render();return;
+   }
    const copy=e.target.closest('[data-pb-copy]');
    if(copy){
      try{

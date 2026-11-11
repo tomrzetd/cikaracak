@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { kodeValid, barcodeCode39, labelBuku } from '../web/js/core/pustaka-label.js';
-import { validIsbn, normalisasiIsbn, petunjukDariOcr } from '../web/js/core/pustaka-ocr.js';
+import { validIsbn, normalisasiIsbn, petunjukDariOcr, nilaiKandidatJudul } from '../web/js/core/pustaka-ocr.js';
 
 test('CODE39: label inventaris memiliki start/stop, 3 lebar dan teks unik',()=>{
   const code='CKR0123456789AB';
@@ -31,4 +31,20 @@ test('OCR: hanya usulan; ISBN dan penerbit diperoleh dari teks',()=>{
   assert.equal(hint.isbn,'9780140328721');
   assert.match(hint.penerbit,/Contoh Press/);
   assert(hint.kandidat.length>=1);
+});
+
+test('OCR judul: cocokkan Pendidikan Pancasila tanpa menebak dari teks gagal',()=>{
+  const benar=petunjukDariOcr('GELOMBANG BUKU\nKelas IX\nPendidikan Pancasila\nUntuk SMP');
+  assert.equal(benar.judul,'Pendidikan Pancasila');
+  assert.equal(benar.mutu,'baik');
+  const gagal=petunjukDariOcr('le rR\nrR\na l\n&.\namieale sila');
+  assert.equal(gagal.judul,'');
+  assert.equal(gagal.mutu,'rendah');
+  assert(nilaiKandidatJudul('Pendidikan Pancasila')>nilaiKandidatJudul('amieale sila'));
+  assert.equal(petunjukDariOcr('Penerbit: PT Pustaka Uji\nISBN 9780140328721').penerbit,'PT Pustaka Uji');
+});
+test('OCR multi-pass: ambil kandidat judul terbaik, bukan baris pertama',()=>{
+ const hasil=petunjukDariOcr('Nama siswa: Ari\nKelas IX\nLogo Penerbit\nPendidikan Pancasila\nBuku Pendidikan Pancasila');
+ assert.match(hasil.judul,/Pendidikan Pancasila/);
+ assert(!hasil.judul.startsWith('Nama siswa'));
 });
