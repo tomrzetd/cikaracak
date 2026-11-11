@@ -71,7 +71,8 @@ function daftarBuku(){
  const keywords=st.draft.cari?.toLowerCase()||'';
  const terpilih=st.judul.filter(b=>!keywords||[b.judul,b.penulis,b.penerbit,b.isbn].some(x=>String(x||'').toLowerCase().includes(keywords)));
  return '<div class="card clay"><div class="head"><div><h3>Katalog sekolah</h3><p class="muted kecil">Barcode ditempel pada sisi/punggung setiap eksemplar fisik. Dua buku dengan judul sama memiliki kode berbeda.</p></div>'+
-    '<button type="button" class="btn kecil" data-pb="muat">Muat ulang</button></div>'+
+    '<div class="row" style="flex-wrap:wrap"><button type="button" class="btn kecil" data-pb="muat">Muat ulang</button>'+
+    '<button type="button" class="btn kecil hijau" data-pb="cetak-batch">Cetak label unik (maks 24)</button></div></div>'+
     '<label>Cari buku <input id="pbCari" data-sementara placeholder="Judul, penerbit, ISBN" value="'+txt(st.draft.cari||'')+'"></label>'+
     (terpilih.length?'<div class="tablebox"><table><thead><tr><th class="l">Judul</th><th class="l">Penerbit / ISBN</th><th>Eksemplar</th><th>Aksi</th></tr></thead><tbody>'+
     terpilih.map(b=>{const copies=copiesBy.get(b.id)||[];
@@ -177,13 +178,13 @@ async function barcodeFoto(file,ctx){
 function cetakLabel(kode){
  const x=st.eksemplar.find(e=>e.kode===kode);
  const b=x&&st.judul.find(v=>v.id===x.judul_id);
- const item=b||st.baru?.kode===kode&&st.baru;
+ const item=b||(st.baru?.kode===kode?st.baru:null);
  if(!item||!kodeValid(kode))throw new Error('Label belum terdaftar');
  const area=document.getElementById('cetak');
  if(!area)throw new Error('Area cetak tidak ada');
- area.innerHTML='<div class="pustaka-kertas-label">'+Array.from({length:12},()=>labelBuku({
+ area.innerHTML='<div class="pustaka-kertas-label">'+labelBuku({
    kode,judul:item.judul,sekolah:st.profil?.sekolah?.nama||'Cikaracak Pustaka'
- })).join('')+'</div>';
+ })+'</div>';
  if(window.AndroidJembatan?.cetak)window.AndroidJembatan.cetak('Label buku '+kode);
  else window.print();
 }
@@ -237,6 +238,16 @@ export function pasang(el,ctx){
    if(!b)return;
    try{
      switch(b.dataset.pb){
+       case 'cetak-batch':{
+         const labels=st.eksemplar.filter(x=>x.aktif).slice(0,24).map(x=>{
+           const book=st.judul.find(b=>b.id===x.judul_id);
+           return book&&kodeValid(x.kode)?labelBuku({kode:x.kode,judul:book.judul,sekolah:st.profil?.sekolah?.nama}):'';
+         }).filter(Boolean);
+         if(!labels.length)throw new Error('Belum ada label untuk dicetak');
+         document.getElementById('cetak').innerHTML='<div class="pustaka-kertas-label">'+labels.join('')+'</div>';
+         window.AndroidJembatan?.cetak?window.AndroidJembatan.cetak('Label inventaris Cikaracak'):window.print();
+         break;
+       }
        case 'muat': await muat(ctx);break;
        case 'kamera':
          if(st.kamera){hentikanKamera();ctx.render();break;}
