@@ -46,6 +46,7 @@ function formInput(){
   '<span class="pill sky">FOTO TETAP DI PERANGKAT</span></div>'+
   '<div class="row pustaka-ocr-actions" style="flex-wrap:wrap">'+
     '<label class="btn kecil hijau">📷 Kamera HP / pilih foto <input id="pbFoto" type="file" accept="image/*" capture="environment" hidden></label>'+
+    '<label class="btn kecil">▥ Foto barcode ISBN (belakang buku) <input id="pbIsbnFoto" type="file" accept="image/*" capture="environment" hidden></label>'+
     '<button type="button" class="btn kecil" data-pb="kamera">'+(st.kamera?'Tutup webcam':'Aktifkan webcam')+'</button>'+
     (st.kamera?'<button type="button" class="btn utama" data-pb="jepret">📸 Cekrek Foto</button>':'')+
   '</div>'+
@@ -221,7 +222,7 @@ async function barcodeFoto(file,ctx){
        kode=(await det.detect(bitmap))?.[0]?.rawValue||'';}finally{bitmap.close();}
    }else throw new Error('Browser ini belum mendukung pembaca barcode kamera. Gunakan Android atau ketik kode secara manual');
    if(kodeValid(kode)){st.hasilKode=kode;toast('Barcode buku ditemukan');}
-   else if(validIsbn(kode)){st.draft.isbn=normalisasiIsbn(kode);toast('ISBN terdeteksi; cari rekomendasi buku');}
+   else if(validIsbn(kode)){st.draft.isbn=normalisasiIsbn(kode);selaraskanForm(document.getElementById('v-pustakaSekolah'));toast('ISBN terdeteksi; klik Cari rekomendasi judul & penerbit');}
    else throw new Error('Barcode tidak dikenali sebagai kode Cikaracak atau ISBN');
  }catch(e){toast(pesan(e));}
  ctx.render();
@@ -248,6 +249,7 @@ export function pasang(el,ctx){
  el.addEventListener('change',async e=>{
    if(e.target.id==='pbFoto'){const foto=e.target.files?.[0];e.target.value='';hentikanKamera();await siapFoto(foto,ctx);}
    if(e.target.id==='pbScanFile'){await barcodeFoto(e.target.files?.[0],ctx);e.target.value='';}
+   if(e.target.id==='pbIsbnFoto'){await barcodeFoto(e.target.files?.[0],ctx);e.target.value='';}
  });
  el.addEventListener('submit',async e=>{
    if(e.target.id!=='pbForm')return;
