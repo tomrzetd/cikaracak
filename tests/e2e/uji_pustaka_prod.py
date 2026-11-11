@@ -47,7 +47,7 @@ def jalan(page):
         r.fulfill(status=200,content_type="application/json",
           headers={'access-control-allow-origin':'*'},body=json.dumps(data))
     page.route(GATE+'/**',route)
-    page.add_init_script("""() => {
+    page.add_init_script("""(() => {
       localStorage.setItem('cikaracak.server',JSON.stringify({url:'https://pustaka.test',anon:'sb_publishable_test'}));
       localStorage.setItem('cikaracak.sesi',JSON.stringify({akses:'eyJ.fake',segar:'fake',sampai:Date.now()+3600000,
         pengguna:{id:'00000000-0000-0000-0000-0000000000a1',email:'operator@tes.sch.id'}}));
@@ -58,7 +58,7 @@ def jalan(page):
           detail:{id,text:'CKR0123456789AB'}})),20),
         cetak:(judul)=>{window.__cetak=(window.__cetak||0)+1;}
       };
-    }""")
+    })();""")
     page.goto(URL+'#pustakaSekolah')
     expect(page.locator('#pbForm')).to_be_visible(timeout=12000)
     assert page.locator('#v-pustakaSekolah').is_visible()
