@@ -66,6 +66,12 @@ def jalan(page):
     expect(page.locator('#pbJudul')).to_have_value('')
     f=io.BytesIO();Image.new('RGB',(160,100),'white').save(f,format='JPEG')
     page.locator('#pbFoto').set_input_files({'name':'sampul.jpg','mimeType':'image/jpeg','buffer':f.getvalue()})
+    expect(page.locator('.pustaka-ocr-preview img')).to_be_visible(timeout=12000)
+    expect(page.locator('#pbJudul')).to_have_value('')  # OCR tidak menimpa formulir sebelum persetujuan
+    page.locator('[data-pb=ocr]').click()
+    expect(page.locator('.pustaka-ocr-hasil')).to_contain_text('ATLAS GEOGRAFI NUSANTARA',timeout=12000)
+    expect(page.locator('#pbJudul')).to_have_value('')
+    page.locator('[data-pb=terapkan-ocr]').click()
     expect(page.locator('#pbJudul')).to_have_value('ATLAS GEOGRAFI NUSANTARA',timeout=12000)
     expect(page.locator('#pbPenerbit')).to_have_value('Uji Press')
     expect(page.locator('#pbIsbn')).to_have_value('9780140328721')
@@ -83,7 +89,25 @@ def jalan(page):
     assert kode[0] in text and kode[1] in text
     page.locator('#pbScanFile').set_input_files({'name':'label.jpg','mimeType':'image/jpeg','buffer':f.getvalue()})
     expect(page.locator('#pbKode')).to_have_value(kode[0],timeout=10000)
-    print('Pustaka P1 E2E: katalog, OCR Android bridge, CODE39, label unik, lookup lulus')
+
+    # E2E jalur PWA: simulasi pemuatan Tesseract dari CDN harus diizinkan CSP,
+    # kemudian foto -> Baca Tulisan -> Gunakan Data (tanpa bridge Android).
+    page.evaluate("delete window.AndroidJembatan; window.TextDetector=undefined")
+    page.route('https://cdn.jsdelivr.net/npm/tesseract.js@6.0.1/dist/tesseract.min.js',
+      lambda route: route.fulfill(status=200,content_type='application/javascript',
+        headers={'access-control-allow-origin':'*'},
+        body="""window.Tesseract={createWorker:async()=>({
+          recognize:async()=>({data:{text:'BUKU KIMIA UNTUK SMA\\nPenerbit: Percobaan PWA'}}),
+          terminate:async()=>{}
+        })};"""))
+    page.locator('#pbFoto').set_input_files({'name':'sampul.jpg','mimeType':'image/jpeg','buffer':f.getvalue()})
+    expect(page.locator('.pustaka-ocr-preview img')).to_be_visible(timeout=12000)
+    page.locator('[data-pb=ocr]').click()
+    expect(page.locator('.pustaka-ocr-hasil')).to_contain_text('BUKU KIMIA UNTUK SMA',timeout=12000)
+    page.locator('[data-pb=terapkan-ocr]').click()
+    expect(page.locator('#pbJudul')).to_have_value('BUKU KIMIA UNTUK SMA')
+    expect(page.locator('#pbPenerbit')).to_have_value('Percobaan PWA')
+    print('Pustaka P1 E2E: alur Android+PWA, CSP CDN, tombol OCR, data konfirmasi, barcode lulus')
 
 if __name__=='__main__':
     server=subprocess.Popen(['node',str(ROOT/'tools'/'serve.js'),'8791'],cwd=ROOT,
