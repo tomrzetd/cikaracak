@@ -297,5 +297,7 @@ export function pasang(el,ctx){
  });
  // Jika pengguna meninggalkan halaman, tutup stream kamera agar tidak menyala diam-diam.
  window.addEventListener('hashchange',()=>{if(location.hash.slice(1)!=='pustakaSekolah')hentikanKamera();});
- Promise.resolve().then(()=>muat(ctx));
 }
+
+/** Dipanggil setiap kali halaman katalog dibuka agar sesi login/penugasan terbaru terbaca. */
+export function saatBuka(ctx) { return muat(ctx); }
