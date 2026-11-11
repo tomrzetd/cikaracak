@@ -343,3 +343,8 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .
 .pustaka-ocr-hasil h4{margin:0}
 .pustaka-ocr-hasil p{margin:0;line-height:1.5;overflow-wrap:anywhere}
 .pustaka-ocr-hasil .btn{justify-self:start}
+
+/* Alternatif OCR tidak otomatis masuk ke katalog: dipilih petugas setelah inspeksi foto. */
+.pustaka-kandidat-ocr{display:flex;flex-wrap:wrap;gap:7px;padding:10px 0}
+.pustaka-kandidat-ocr>b{width:100%;font-size:.83rem;color:var(--ink)}
+.pustaka-kandidat-ocr button{max-width:100%;white-space:normal;text-align:left;overflow-wrap:anywhere}
