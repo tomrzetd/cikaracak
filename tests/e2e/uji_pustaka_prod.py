@@ -43,6 +43,7 @@ def jalan(page):
             eksemplar.append({'id':data['eksemplar_id'],'judul_id':data['judul_id'],
               'kode':data['kode'],'status':'tersedia','kondisi':'baik','aktif':True,
               'dibuat_at':'2026-11-11T06:01:00Z'})
+        elif req.method=='GET': data=[]  # halaman Presensi memuat rombel terpisah saat startup
         else: raise AssertionError('RPC tidak dikenal: '+parsed)
         r.fulfill(status=200,content_type="application/json",
           headers={'access-control-allow-origin':'*'},body=json.dumps(data))
