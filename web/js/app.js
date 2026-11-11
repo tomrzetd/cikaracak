@@ -83,6 +83,7 @@ function go(v) {
   $('.konteks').hidden = v === 'presensi' || v === 'layanan' || v === 'pustaka' || v === 'pustakaSekolah' || v === 'dasborPublik';   // kelas & kuis di perangkat tidak berlaku untuk presensi server
   if (location.hash.slice(1) !== v) history.replaceState(null, '', '#' + v);
   render();
+  if (v === 'pustakaSekolah') void pustakaSekolah.saatBuka(ctx);
   window.scrollTo(0, 0);
 }
 let antre = false;
