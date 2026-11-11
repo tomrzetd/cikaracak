@@ -1,5 +1,5 @@
 # Publikasi demo web Cikaracak tanpa menggabungkan firmware/Android dari PR pengembangan.
-# Snapshot rilis: web v0.7.1, tombol cekrek/OCR, CSP CDN worker diperbaiki; database production tidak berubah.
+# Snapshot rilis: web v0.7.2, OCR Indonesia+Inggris multi-pass dan fallback scan ISBN; backend production tidak berubah.
 # Jika ingin versi web lebih baru, tinjau dan perbarui ref ini melalui PR terpisah.
 name: Pages - Demo Web Cikaracak
 
@@ -30,7 +30,7 @@ jobs:
       - name: Ambil snapshot web yang telah diuji
         uses: actions/checkout@v4
         with:
-          ref: e875f72dce36dc576cfa8e7f18bca1c472bb1d03
+          ref: e9cbaa34da13e09fe332e60bd422f2d80c705538
           persist-credentials: false
 
       - name: Periksa struktur web dan berkas offline
