@@ -34,17 +34,17 @@ test('OCR: hanya usulan; ISBN dan penerbit diperoleh dari teks',()=>{
 });
 
 test('OCR judul: cocokkan Pendidikan Pancasila tanpa menebak dari teks gagal',()=>{
-  const benar=petunjukDariOcr('GELOMBANG BUKU\\nKelas IX\\nPendidikan Pancasila\\nUntuk SMP');
+  const benar=petunjukDariOcr('GELOMBANG BUKU\nKelas IX\nPendidikan Pancasila\nUntuk SMP');
   assert.equal(benar.judul,'Pendidikan Pancasila');
   assert.equal(benar.mutu,'baik');
-  const gagal=petunjukDariOcr('le rR\\nrR\\na l\\n&.\\namieale sila');
+  const gagal=petunjukDariOcr('le rR\nrR\na l\n&.\namieale sila');
   assert.equal(gagal.judul,'');
   assert.equal(gagal.mutu,'rendah');
   assert(nilaiKandidatJudul('Pendidikan Pancasila')>nilaiKandidatJudul('amieale sila'));
-  assert.equal(petunjukDariOcr('Penerbit: PT Pustaka Uji\\nISBN 9780140328721').penerbit,'PT Pustaka Uji');
+  assert.equal(petunjukDariOcr('Penerbit: PT Pustaka Uji\nISBN 9780140328721').penerbit,'PT Pustaka Uji');
 });
 test('OCR multi-pass: ambil kandidat judul terbaik, bukan baris pertama',()=>{
- const hasil=petunjukDariOcr('Nama siswa: Ari\\nKelas IX\\nLogo Penerbit\\nPendidikan Pancasila\\nBuku Pendidikan Pancasila');
+ const hasil=petunjukDariOcr('Nama siswa: Ari\nKelas IX\nLogo Penerbit\nPendidikan Pancasila\nBuku Pendidikan Pancasila');
  assert.match(hasil.judul,/Pendidikan Pancasila/);
  assert(!hasil.judul.startsWith('Nama siswa'));
 });
