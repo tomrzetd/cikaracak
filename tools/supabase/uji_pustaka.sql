@@ -10,9 +10,10 @@ do $$
 declare a jsonb; b jsonb; c jsonb;
 begin
   assert public.pustaka_petugas(), 'Operator adalah petugas pustaka';
-  a := public.pustaka_terima_buku('Atlas Geografi','Tim Ilmu','Penerbit Satu','9786021234567','manual');
-  b := public.pustaka_terima_buku('Judul saran berbeda','Tim Ilmu','Penerbit Kedua','9786021234567','ocr');
+  a := public.pustaka_terima_buku('Atlas Geografi','Tim Ilmu','Penerbit Satu','9780140328721','manual');
+  b := public.pustaka_terima_buku('Judul saran berbeda','Tim Ilmu','Penerbit Kedua','9780140328721','ocr');
   assert a->>'judul_id'=b->>'judul_id' and (a->>'kode')<>(b->>'kode'), 'ISBN sama, eksemplar unik';
+  perform set_config('uji.pustaka_judul',(a->>'judul_id'),false);
   assert (a->>'kode') ~ '^CKR[0-9A-F]{12}$', 'Kode CODE39 kompatibel';
   assert (select count(*) from public.pustaka_judul)=1, 'ISBN tidak diduplikasi';
   assert (select judul from public.pustaka_judul where id=(a->>'judul_id')::uuid)='Atlas Geografi', 'OCR tidak boleh overwrite metadata';
@@ -88,10 +89,10 @@ set local request.jwt.claim.sub = '00000000-0000-0000-0000-0000000000a4';
 do $$ begin
   assert (select count(*) from public.pustaka_judul)=0, 'Isolasi sekolah lain';
   begin
-    perform public.pustaka_tambah_eksemplar((select id from public.pustaka_judul limit 1));
+    perform public.pustaka_tambah_eksemplar(current_setting('uji.pustaka_judul')::uuid);
     raise exception 'GAGAL: sekolah lain membuat copy';
-  exception when insufficient_privilege then null; end;
-end $$;
+  exception when invalid_parameter_value then null; end;
+end $;
 rollback;
 \o
 \echo 'Uji pustaka katalog, label, akses lintas sekolah lulus.'
