@@ -91,7 +91,7 @@ export function render(el) {
   const k=ringkasanPustaka(data);
   el.innerHTML='<div class="hero clay pustaka-hero"><div class="copy"><span class="pill peach" style="align-self:flex-start">SIMULASI LOKAL • SEMUA DATA FIKTIF</span>'+
     '<h2>Cikaracak Pustaka</h2><p>Coba alur kerja perpustakaan sekolah: katalog, barcode eksemplar, peminjaman, pengembalian, dan laporan. Tidak menggunakan data sekolah asli.</p>'+
-    '<div class="row"><button type="button" class="btn utama" data-pu-tab="sirkulasi">Simulasikan peminjaman</button><button type="button" class="btn" data-pu-tab="laporan">Lihat laporan</button></div></div></div>'+
+    '<div class="row"><button type="button" class="btn utama" data-pu-tab="sirkulasi">Simulasikan peminjaman</button><button type="button" class="btn" data-pu-tab="laporan">Lihat laporan</button><button type="button" class="btn" data-go="pustakaSekolah">Katalog sekolah (pilot)</button></div></div></div>'+
     (galat?'<p class="status err">'+esc(galat)+'</p>':'')+statistik(k)+
     '<div class="row pustaka-tabs" role="tablist" aria-label="Menu pustaka">'+
     [['sirkulasi','Sirkulasi'],['katalog','Katalog & Stok'],['laporan','Laporan']].map(([id,n])=>
