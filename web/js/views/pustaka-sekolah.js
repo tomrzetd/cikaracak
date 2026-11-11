@@ -8,7 +8,7 @@ import { jpegDariGambar, ocrBuku, petunjukDariOcr, cariMetadata, normalisasiIsbn
 
 const baruDraft=()=>({judul:'',penulis:'',penerbit:'',isbn:'',sumber:'manual'});
 const st={profil:null,galat:'',pesan:'',memuat:false,judul:[],eksemplar:[],draft:baruDraft(),
-  saran:[],teksOcr:'',mode:'daftar',kamera:null,baru:null,hasilKode:'',statusOcr:'',akses:false};
+  saran:[],teksOcr:'',usulanOcr:null,foto:null,sedangOcr:false,mode:'daftar',kamera:null,baru:null,hasilKode:'',statusOcr:'',akses:false};
 const tugasBoleh=p=>p?.peran==='admin'||(p?.tugas||[]).some(t=>t.jenis==='pustakawan');
 const asal='https://github.com/tomrzetd/cikaracak/blob/hadir-uji-kartu/supabase/migrations/20261111000001_pustaka_katalog.sql';
 const txt=v=>esc(String(v||''));
@@ -41,16 +41,31 @@ function ringkasan(){
 const pilih=(id,value,placeholder='')=>'<input id="'+id+'" value="'+txt(value)+'" placeholder="'+txt(placeholder)+'" data-sementara>';
 function formInput(){
  const d=st.draft;
- return '<div class="card clay"><div class="head"><div><h3>1 · Pindai sampul buku</h3>'+
-  '<p class="muted kecil">Arahkan kamera ke sampul atau halaman identitas buku. OCR hanya memberi usulan, bukan keputusan otomatis.</p></div>'+
-  '<span class="pill sky">Foto tetap di perangkat</span></div>'+
-  '<div class="row" style="flex-wrap:wrap">'+
-    '<label class="btn kecil hijau">📷 Kamera / pilih foto <input id="pbFoto" type="file" accept="image/*" capture="environment" hidden></label>'+
-    '<button type="button" class="btn kecil" data-pb="kamera">Webcam langsung (PWA)</button>'+
-    (st.kamera?'<button type="button" class="btn kecil" data-pb="jepret">Ambil dari webcam</button>':'')+
-  '</div>'+(st.kamera?'<video id="pbVideo" autoplay muted playsinline class="pustaka-video"></video>':'')+
-  (st.statusOcr?'<p class="status">'+txt(st.statusOcr)+'</p>':'')+
-  (st.teksOcr?'<details class="pustaka-ocr-mentah"><summary>Periksa teks hasil OCR</summary><pre>'+txt(st.teksOcr.slice(0,3500))+'</pre></details>':'')+
+ return '<div class="card clay"><div class="head"><div><h3>1 · Ambil foto sampul buku</h3>'+
+  '<p class="muted kecil">Foto dahulu, kemudian tekan Baca tulisan (OCR). Setelah dibaca, periksa usulan judul dan penerbit sebelum memasukkannya ke formulir.</p></div>'+
+  '<span class="pill sky">FOTO TETAP DI PERANGKAT</span></div>'+
+  '<div class="row pustaka-ocr-actions" style="flex-wrap:wrap">'+
+    '<label class="btn kecil hijau">📷 Kamera HP / pilih foto <input id="pbFoto" type="file" accept="image/*" capture="environment" hidden></label>'+
+    '<button type="button" class="btn kecil" data-pb="kamera">'+(st.kamera?'Tutup webcam':'Aktifkan webcam')+'</button>'+
+    (st.kamera?'<button type="button" class="btn utama" data-pb="jepret">📸 Cekrek Foto</button>':'')+
+  '</div>'+
+  (st.kamera?'<video id="pbVideo" autoplay muted playsinline class="pustaka-video" aria-label="Pratinjau kamera sampul buku"></video>':'')+
+  (st.foto?'<div class="pustaka-ocr-preview"><img src="'+st.foto+'" alt="Hasil foto sampul yang siap dibaca OCR">'+
+    '<div class="row" style="flex-wrap:wrap">'+
+      '<button type="button" class="btn utama" data-pb="ocr" '+(st.sedangOcr?'disabled':'')+'>'+
+      (st.sedangOcr?'⏳ Membaca tulisan…':'🔍 Baca Tulisan (OCR)')+'</button>'+
+      '<button type="button" class="btn kecil" data-pb="ulang-foto" '+(st.sedangOcr?'disabled':'')+'>↻ Ulangi Foto</button>'+
+    '</div></div>':
+    '<p class="muted kecil">Belum ada foto. Gunakan kamera HP/pilih foto, atau aktifkan webcam lalu tekan <b>Cekrek Foto</b>.</p>')+
+  (st.statusOcr?'<p id="pbOcrStatus" class="status" role="status" aria-live="polite">'+txt(st.statusOcr)+'</p>':'')+
+  (st.usulanOcr?'<div class="pustaka-ocr-hasil">'+
+    '<h4>Usulan hasil OCR — belum dimasukkan ke formulir</h4>'+
+    '<p><b>Judul:</b> '+txt(st.usulanOcr.judul||'(tidak terdeteksi)')+'</p>'+
+    '<p><b>Penerbit:</b> '+txt(st.usulanOcr.penerbit||'(belum terdeteksi)')+'</p>'+
+    '<p><b>ISBN:</b> '+txt(st.usulanOcr.isbn||'(belum terdeteksi)')+'</p>'+
+    '<button type="button" class="btn utama" data-pb="terapkan-ocr">✓ Gunakan Data Hasil OCR</button>'+
+  '</div>':'')+
+  (st.teksOcr?'<details class="pustaka-ocr-mentah"><summary>Lihat teks lengkap yang terbaca</summary><pre>'+txt(st.teksOcr.slice(0,3500))+'</pre></details>':'')+
   '</div>'+
   '<form id="pbForm" class="card clay"><h3>2 · Periksa judul dan penerbit</h3>'+
   '<p class="muted kecil">Petugas wajib mengoreksi ejaan, cetakan dan ISBN sebelum disimpan. ISBN membantu mencegah judul ganda.</p>'+
@@ -136,19 +151,41 @@ export function render(el){
 function hentikanKamera(){
  if(st.kamera){st.kamera.getTracks().forEach(t=>t.stop());st.kamera=null;}
 }
-async function pindaiFile(file,ctx){
+async function siapFoto(file,ctx){
  if(!file)return;
- st.statusOcr='Menyiapkan gambar…';ctx.render();
- try {
-   const img=await jpegDariGambar(file);
-   const text=await ocrBuku(img,t=>{st.statusOcr=t;ctx.render();});
-   st.teksOcr=text;
-   const hint=petunjukDariOcr(text);
-   st.draft={...st.draft,judul:hint.judul||st.draft.judul,
-     penerbit:hint.penerbit||st.draft.penerbit,isbn:hint.isbn||st.draft.isbn,sumber:'ocr'};
-   st.saran=[];st.statusOcr='OCR selesai. Periksa dan koreksi data di bawah sebelum menyimpan.';
- }catch(e){st.statusOcr='OCR tidak selesai: '+pesan(e)+'. Isian manual tetap tersedia.';}
+ st.foto=null;st.usulanOcr=null;st.teksOcr='';st.statusOcr='Menyiapkan foto…';
  ctx.render();
+ try {
+   st.foto=await jpegDariGambar(file);
+   st.statusOcr='Foto berhasil diambil. Tekan "Baca Tulisan (OCR)" untuk mengenali judul buku.';
+ }catch(e){st.statusOcr='Foto tidak dapat dibaca: '+pesan(e);}
+ ctx.render();
+}
+async function prosesOcr(ctx){
+ if(!st.foto){toast('Ambil foto sampul dulu');return;}
+ if(st.sedangOcr)return;
+ st.sedangOcr=true;
+ st.usulanOcr=null;
+ st.statusOcr='Mengenali tulisan pada sampul…';
+ ctx.render();
+ const kemajuan=(keterangan)=>{
+   st.statusOcr=keterangan;
+   const status=document.getElementById('pbOcrStatus');
+   if(status)status.textContent=keterangan;
+ };
+ try{
+   const teks=await ocrBuku(st.foto,kemajuan);
+   st.teksOcr=teks;
+   if(!teks.trim())throw new Error('Tidak ada tulisan yang terbaca. Coba foto tanpa bayangan atau mendekatkan buku.');
+   const usulan=petunjukDariOcr(teks);
+   st.usulanOcr=usulan;
+   st.statusOcr='OCR selesai. Klik "Gunakan Data Hasil OCR" untuk memindahkan usulan ke formulir.';
+ }catch(e){
+   st.statusOcr='OCR belum berhasil: '+pesan(e)+' Anda tetap bisa mengisi formulir secara manual atau mencoba foto lain.';
+ }finally{
+   st.sedangOcr=false;
+   ctx.render();
+ }
 }
 async function barcodeFoto(file,ctx){
  if(!file)return;
@@ -195,7 +232,7 @@ export function pasang(el,ctx){
    if(map[t.id])st.draft[map[t.id]]=t.value;
  });
  el.addEventListener('change',async e=>{
-   if(e.target.id==='pbFoto'){await pindaiFile(e.target.files?.[0],ctx);e.target.value='';}
+   if(e.target.id==='pbFoto'){const foto=e.target.files?.[0];e.target.value='';hentikanKamera();await siapFoto(foto,ctx);}
    if(e.target.id==='pbScanFile'){await barcodeFoto(e.target.files?.[0],ctx);e.target.value='';}
  });
  el.addEventListener('submit',async e=>{
@@ -210,7 +247,7 @@ export function pasang(el,ctx){
    try{
      const j=await srv.rpc('pustaka_terima_buku',{p_judul:d.judul,p_penulis:d.penulis,
        p_penerbit:d.penerbit,p_isbn:d.isbn||null,p_sumber:d.sumber||'manual'});
-     st.baru={kode:j.kode,judul:d.judul};st.draft=baruDraft();st.saran=[];st.teksOcr='';
+     st.baru={kode:j.kode,judul:d.judul};st.draft=baruDraft();st.saran=[];st.teksOcr='';st.usulanOcr=null;st.foto=null;st.statusOcr='';
      st.pesan='Buku tercatat. '+(j.judul_baru?'Judul baru dan satu eksemplar dibuat.':'ISBN sudah ada; satu eksemplar baru ditambahkan tanpa mengubah metadata sebelumnya.')+
        ' Cetak barcode dan tempel pada buku fisik.';
      await muat(ctx,{profil:false});
@@ -238,6 +275,23 @@ export function pasang(el,ctx){
    if(!b)return;
    try{
      switch(b.dataset.pb){
+       case 'ocr': await prosesOcr(ctx);break;
+       case 'terapkan-ocr':{
+         const h=st.usulanOcr;
+         if(!h){toast('Belum ada hasil OCR. Tekan Baca Tulisan dulu.');break;}
+         st.draft={...st.draft,
+           judul:h.judul||st.draft.judul,
+           penerbit:h.penerbit||st.draft.penerbit,
+           isbn:h.isbn||st.draft.isbn,
+           sumber:'ocr'};
+         st.statusOcr='Data OCR sudah dipindahkan. Periksa kembali judul dan penerbit sebelum menyimpan.';
+         ctx.render();
+         document.getElementById('pbJudul')?.focus();
+         break;
+       }
+       case 'ulang-foto':
+         st.foto=null;st.usulanOcr=null;st.teksOcr='';st.statusOcr='';
+         ctx.render();break;
        case 'cetak-batch':{
          const labels=st.eksemplar.filter(x=>x.aktif).slice(0,24).map(x=>{
            const book=st.judul.find(b=>b.id===x.judul_id);
@@ -261,7 +315,7 @@ export function pasang(el,ctx){
          const canvas=document.createElement('canvas');canvas.width=video.videoWidth;canvas.height=video.videoHeight;
          canvas.getContext('2d').drawImage(video,0,0);
          const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',.86));
-         hentikanKamera();await pindaiFile(new File([blob],'sampul.jpg',{type:'image/jpeg'}),ctx);break;
+         hentikanKamera();await siapFoto(new File([blob],'sampul.jpg',{type:'image/jpeg'}),ctx);break;
        }
        case 'rekomendasi':
          if(st.memuat)return;st.statusOcr='Mencari metadata publik…';ctx.render();
